@@ -4245,18 +4245,25 @@ export default function App() {
         <p className="tracking-wide">© 2026 Momentos Zen · Tu Refugio Espiritual</p>
         <p className="text-slate-600 mt-1">Conectando la sabiduría ancestral y la inteligencia artificial para guiar tu paz interior.</p>
         
-        {/* Gratitude Link */}
-        <a
-          href="https://mpago.la/1LHyBwV"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-2 mt-2 rounded-full bg-rose-950/20 hover:bg-rose-950/40 border border-rose-500/20 hover:border-rose-500/50 text-slate-300 text-[11px] font-bold tracking-wider transition-all duration-300 hover:text-rose-200 hover:shadow-[0_0_15px_rgba(244,63,94,0.15)] active:scale-95 group"
-        >
-          <span>
-            {language === "en" ? "Gratitude" : language === "pt" ? "Agradecimento" : "Agradecimiento"}
+        {/* Cafecito / Gratitude Section */}
+        <div className="flex items-center justify-center gap-2 mt-2 bg-slate-900/30 px-5 py-2.5 rounded-2xl border border-slate-900/60 max-w-sm sm:max-w-md shadow-md">
+          <span className="bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-200 bg-clip-text text-transparent text-[11px] sm:text-xs font-bold leading-relaxed animate-pulse drop-shadow-[0_1px_5px_rgba(245,158,11,0.3)] tracking-wide">
+            {language === "en"
+              ? "If you enjoyed this moment of relaxation, buy me a coffee"
+              : language === "pt"
+              ? "Se você gostou deste momento de relaxamento, me pague um cafezinho"
+              : "si disfrutaste de este momento de relax, invítame con un cafecito"}
           </span>
-          <span className="text-rose-500 animate-pulse text-xs group-hover:scale-125 transition-transform duration-300">❤️</span>
-        </a>
+          <a
+            href="https://mpago.la/1LHyBwV"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center text-lg hover:scale-130 hover:rotate-12 active:scale-95 transition-all duration-300 w-8 h-8 bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 hover:border-amber-500/70 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.25)] select-none cursor-pointer"
+            title={language === "en" ? "Buy me a coffee" : "Invítame con un cafecito"}
+          >
+            🤭
+          </a>
+        </div>
 
         {/* Visitors badge twinkling below */}
         <button
