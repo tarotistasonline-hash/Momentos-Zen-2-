@@ -334,6 +334,7 @@ const calculateNumerology = (fullName: string, birthDate: string) => {
 function getProceduralZenAdvice(mood: string, stressLevel: number, language: string) {
   const isEn = language === "en";
   const isPt = language === "pt";
+  const isDe = language === "de";
   const m = (mood || "neutral").toLowerCase();
   
   let title = "";
@@ -411,6 +412,41 @@ function getProceduralZenAdvice(mood: string, stressLevel: number, language: str
         "Organize três objetos do seu ambiente imediato para limpar o ruído visual.",
         "Respire fundo três vezes antes de responder à sua próxima mensagem.",
         "Escreva três coisas simples pelas quais você é grato agora."
+      ];
+    }
+  } else if (isDe) {
+    if (m === "ansioso" || m === "anxious" || m === "ängstlich") {
+      title = "Beruhigung des wilden Flusses";
+      reflection = "Wenn Angst aufsteigt, ist sie wie ein Fluss nach einem Sturm. Kämpfe nicht gegen die Wellen; tritt stattdessen an das Ufer. Deine Gedanken sind nicht deine Identität; sie sind nur Wolken, die durch einen unendlichen Himmel ziehen. Atme in den gegenwärtigen Moment.";
+      exerciseName = "Die Verankerungsatmung (4-4-8)";
+      exerciseDesc = "Atme 4 Sekunden lang tief ein und spüre, wie sich deine Brust ausdehnt. Halte den Atem sanft für 4 Sekunden. Atme 8 Sekunden lang langsam aus und lasse alle Anspannung aus Kiefer und Schultern los. Wiederhole diesen Zyklus 10 Mal.";
+      mantra = "Ich bin sicher, geerdet und präsent in diesem Atemzug.";
+      actions = [
+        "Trinke eine warme Tasse Kräutertee, ohne auf Bildschirme zu schauen.",
+        "Mache einen langsamen 5-minütigen Spaziergang und konzentriere dich ganz auf das Gefühl deiner Füße auf der Erde.",
+        "Lege eine Hand auf dein Herz, schließe die Augen und spüre seinen gleichmäßigen Rhythmus."
+      ];
+    } else if (m === "tired" || m === "cansado" || m === "müde") {
+      title = "Wiederherstellung des Lebenslichts";
+      reflection = "Müdigkeit ist kein Misserfolg; sie ist die heilige Einladung des Körpers, zur Quelle zurückzukehren. Erlaube dir, das Bedürfnis loszulassen, etwas zu leisten, zu produzieren oder zu lösen. Wahre Produktivität beginnt mit radikaler Ruhe.";
+      exerciseName = "Verjüngender Bodyscan";
+      exerciseDesc = "Lege dich flach hin oder setze dich bequem hin. Richte deine Aufmerksamkeit auf deine Zehen und lade sie ein, weich zu werden. Bewege diese warme Aufmerksamkeit langsam nach oben durch Beine, Bauch, Brust, Schultern und Kopf.";
+      mantra = "Mein Wert definiert sich nicht über mein Tun. Ich darf mich ausruhen.";
+      actions = [
+        "Lege dich für 10 Minuten in die Dunkelheit und lasse deine Gedanken mühelos treiben.",
+        "Wasche dein Gesicht mit kaltem Wasser und atme das erfrischende Gefühl ein.",
+        "Gehe kurz nach draußen, strecke deine Arme zum Himmel und atme frische Energie ein."
+      ];
+    } else {
+      title = "Der gegenwärtige Moment ist der Pfad";
+      reflection = "Jeder Moment ist ein offenes Tor zum Frieden. Du musst die Erleuchtung nicht in einem fernen Tempel suchen; sie ist hier, im sanften Heben und Senken deiner Brust. Die Vergangenheit ist eine Erinnerung; die Zukunft ist eine Vorstellung.";
+      exerciseName = "Somatische Zentrierungsmeditation";
+      exerciseDesc = "Sitze aufrecht mit gerader Wirbelsäule. Schließe deine Augen und konzentriere dich auf das Gefühl der Luft, die durch deine Nasenlöcher einströmt – kühler beim Einatmen, wärmer beim Ausatmen. Beobachte die Stille zwischen den Atemzügen.";
+      mantra = "Hier und jetzt ist alles genau so, wie es sein muss.";
+      actions = [
+        "Räume drei Gegenstände aus deiner unmittelbaren Umgebung weg, um den visuellen Lärm zu reduzieren.",
+        "Nimm drei tiefe Atemzüge, bevor du auf deine nächste Nachricht antwortest.",
+        "Schreibe drei einfache Dinge auf, für die du jetzt gerade dankbar bist."
       ];
     }
   } else {
@@ -1026,6 +1062,9 @@ const getLanguageInstruction = (lang?: string) => {
   }
   if (l === "pt") {
     return "All response texts (including titles, descriptions, reflections, names, keys, advices, meanings, quotes, mantras, practicalActions, blessings, sefirot, pathDescription, runes, summary, interpretations, etc.) MUST be written in Portuguese. Do NOT use Spanish.";
+  }
+  if (l === "de") {
+    return "All response texts (including titles, descriptions, reflections, names, keys, advices, meanings, quotes, mantras, practicalActions, blessings, sefirot, pathDescription, runes, summary, interpretations, etc.) MUST be written in German. Do NOT use Spanish.";
   }
   return "All response texts (including titles, descriptions, reflections, names, keys, advices, meanings, quotes, mantras, practicalActions, blessings, sefirot, pathDescription, runes, summary, interpretations, etc.) MUST be written in Spanish.";
 };
@@ -2033,16 +2072,174 @@ function saveVisits(count: number) {
   }
 }
 
+
+const ANGELS_LIST = [
+  { name: "Arcángel Miguel", key: "michael", color: "#3b82f6", crystal: "Lapislázuli", virtue: "Protección y Fuerza", title: "Defensor de la Luz y de tu Poder Personal" },
+  { name: "Arcángel Gabriel", key: "gabriel", color: "#e2e8f0", crystal: "Cuarzo Hialino", virtue: "Comunicación y Creatividad", title: "Mensajero de Nuevos Comienzos y Revelaciones" },
+  { name: "Arcángel Rafael", key: "raphael", color: "#10b981", crystal: "Aventurina Verde", virtue: "Sanación y Armonía", title: "Médico del Alma y Guía en el Camino" },
+  { name: "Arcángel Uriel", key: "uriel", color: "#f59e0b", crystal: "Ojo de Tigre", virtue: "Sabiduría y Paz", title: "Luz de la Sabiduría Divina y Abundancia de Ideas" },
+  { name: "Arcángel Chamuel", key: "chamuel", color: "#ec4899", crystal: "Cuarzo Rosa", virtue: "Amor Incondicional", title: "Faro del Amor Divino y Sanador del Corazón" },
+  { name: "Arcángel Jofiel", key: "jophiel", color: "#eab308", crystal: "Citrino", virtue: "Belleza e Inspiración", title: "Iluminador de Mentes y Despertador de la Belleza Interior" },
+  { name: "Arcángel Zadquiel", key: "zadkiel", color: "#a855f7", crystal: "Amatista", virtue: "Transmutación y Perdón", title: "Guardián de la Llama Violeta y de la Libertad Espiritual" },
+  { name: "Ángel de la Armonía", key: "harmony", color: "#14b8a6", crystal: "Aguamarina", virtue: "Paz Mental", title: "Traedor de Calma en Tiempos de Tempestad" },
+  { name: "Ángel de la Abundancia", key: "abundance", color: "#eab308", crystal: "Pirita", virtue: "Prosperidad", title: "Canal de Flujo Infinito de Bendiciones de la Tierra" },
+  { name: "Ángel de la Gratitud", key: "gratitude", color: "#f43f5e", crystal: "Turmalina Rosa", virtue: "Alineación del Corazón", title: "Despertador del Gozo Sagrado y del Aprecio Diario" }
+];
+
+function getProceduralAngelAdvice(angel: any, question: string, language: string) {
+  const isEn = language === "en";
+  const isPt = language === "pt";
+
+  let message = "";
+  let affirmation = "";
+  let practicalAction = "";
+
+  if (angel.key === "michael") {
+    message = isEn 
+      ? "Archangel Michael stands by you, offering a shield of deep blue light. He reminds you that you possess the courage and strength to overcome any challenge currently on your mind. Fear is merely an illusion of separation."
+      : isPt
+      ? "O Arcanjo Miguel está ao seu lado, oferecendo um escudo de luz azul profunda. Ele lembra que você possui a coragem e a força para superar qualquer desafio em sua mente. O medo é apenas uma ilusão."
+      : "El Arcángel Miguel está a tu lado, ofreciéndote un escudo de luz azul profunda. Te recuerda que posees el coraje y la fuerza para superar cualquier desafío en tu mente. El miedo es solo una ilusión de separación; recupera hoy tu poder personal.";
+    affirmation = isEn
+      ? "I am protected, strong, and walking in my ultimate truth."
+      : isPt
+      ? "Estou protegido, sou forte e sigo na minha verdade suprema."
+      : "Estoy protegido, fuerte y camino en la verdad de mi alma.";
+    practicalAction = isEn
+      ? "Inhale deeply and visualize a circle of electric blue light guarding your energy."
+      : isPt
+      ? "Respire fundo e visualize um círculo de luz azul elétrica protegendo sua energia."
+      : "Inhala profundamente y visualiza un círculo de luz azul eléctrica protegiendo tu energía.";
+  } else if (angel.key === "raphael") {
+    message = isEn
+      ? "Archangel Raphael pours green emerald light over your body and mind, nurturing your physical and emotional wellbeing. Allow yourself to rest and release any emotional burdens."
+      : isPt
+      ? "O Arcanjo Rafael derrama luz verde esmeralda sobre seu corpo e mente, nutrindo seu bem-estar físico e emocional. Permita-se descansar e liberar fardos."
+      : "El Arcángel Rafael vierte luz verde esmeralda sobre tu cuerpo y mente, nutriendo tu bienestar físico y emocional. Permítete descansar y liberar cualquier carga emocional acumulada.";
+    affirmation = isEn
+      ? "Every cell of my body and thought of my mind is healing in harmony."
+      : isPt
+      ? "Cada célula do meu corpo e pensamento da minha mente se cura em harmonia."
+      : "Cada célula de mi cuerpo y pensamiento de mi mente sana en armonía perfecta.";
+    practicalAction = isEn
+      ? "Take a glass of pure water, bless it with your hands, and drink it with mindfulness."
+      : isPt
+      ? "Beba um copo de água pura, abençoe-o com as mãos e beba-o com atenção plena."
+      : "Toma un vaso de agua pura, bendícelo con tus manos y bébelo con atención plena.";
+  } else {
+    message = isEn
+      ? `The ${angel.name} brings the energy of ${angel.virtue} to your life. Focus on this attribute to find the guidance you need for: "${question}". Everything is aligned in divine timing.`
+      : isPt
+      ? `O ${angel.name} traz a energia de ${angel.virtue} para a sua vida. Concentre-se nisso para obter orientação para: "${question}". Tudo está alinhado no tempo divino.`
+      : `El ${angel.name} trae la energía de ${angel.virtue} a tu vida. Concéntrate en este atributo para hallar la guía que requieres sobre: "${question}". Todo está perfectamente alineado en el tiempo sagrado de tu alma.`;
+    affirmation = isEn
+      ? `I align with the flow of ${angel.virtue} in my life.`
+      : isPt
+      ? `Eu me alinho com o fluxo de ${angel.virtue} na minha vida.`
+      : `Me alineo con el flujo infinito de ${angel.virtue} en mi vida diaria.`;
+    practicalAction = isEn
+      ? "Close your eyes for 2 minutes and focus your attention entirely on your breathing, inviting peace."
+      : isPt
+      ? "Feche os olhos por 2 minutos e foque na sua respiração, convidando a paz."
+      : "Cierra los ojos por 2 minutos y enfoca tu atención enteramente en tu respiración, invitando la calma.";
+  }
+
+  return {
+    angelName: angel.name,
+    angelTitle: angel.title,
+    coreMessage: message,
+    crystal: angel.crystal,
+    affirmation: affirmation,
+    practicalAction: practicalAction
+  };
+}
+
+app.post("/api/angels", async (req, res) => {
+  const { question, language } = req.body;
+  const userQuestion = question || "Guía y luz para mi momento actual.";
+  
+  const randomIndex = Math.floor(Math.random() * ANGELS_LIST.length);
+  const selectedAngel = ANGELS_LIST[randomIndex];
+
+  try {
+    const prompt = `Actúa como una canalizadora de ángeles, terapeuta holística y guía espiritual compasiva de luz.
+He solicitado una carta o mensaje del Oráculo de los Ángeles de Luz para responder o guiar mi situación: "${userQuestion}".
+El ángel o arcángel que ha salido aleatoriamente para guiarme es: "${selectedAngel.name}" (Símbolo o Cristal: ${selectedAngel.crystal}, Virtud: ${selectedAngel.virtue}).
+
+Escribe una canalización angélica hermosa, amorosa, mística y altamente reconfortante.
+${getLanguageInstruction(language)}
+Devuelve el resultado estructurado en JSON con el siguiente formato exacto:
+{
+  "angelName": "${selectedAngel.name}",
+  "angelTitle": "Un título celestial y poético adaptado a este ángel (ej: Defensor Celestial de tu Poder Personal)",
+  "coreMessage": "Mensaje celestial detallado, profundo, compasivo y terapéutico de 2 o 3 párrafos cortos que hable sobre mi inquietud, me traiga calma y guíe mi corazón.",
+  "crystal": "${selectedAngel.crystal}",
+  "affirmation": "Una afirmación afirmativa y poderosa en primera persona, para repetir y sintonizar con la energía de este ángel hoy.",
+  "practicalAction": "Un ejercicio o acción práctica muy sencilla, amorosa y espiritual para hacer hoy mismo y sintonizar con esta vibración."
+}`;
+
+    const response = await generateContentWithRetry({
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            angelName: { type: Type.STRING },
+            angelTitle: { type: Type.STRING },
+            coreMessage: { type: Type.STRING },
+            crystal: { type: Type.STRING },
+            affirmation: { type: Type.STRING },
+            practicalAction: { type: Type.STRING }
+          },
+          required: ["angelName", "angelTitle", "coreMessage", "crystal", "affirmation", "practicalAction"]
+        }
+      }
+    });
+
+    const result = JSON.parse(response.text || "{}");
+    res.json(result);
+  } catch (err: any) {
+    console.warn("Falling back to procedural Angel Oracle due to error:", err.message || err);
+    const fallback = getProceduralAngelAdvice(selectedAngel, userQuestion, language || "es");
+    res.json(fallback);
+  }
+});
+
+const activeSessions = new Map<string, number>();
+
+function cleanActiveSessions() {
+  const now = Date.now();
+  for (const [key, timestamp] of activeSessions.entries()) {
+    if (now - timestamp > 60000) { // 1 minute window
+      activeSessions.delete(key);
+    }
+  }
+}
+
+function getOnlineCount(req?: any): number {
+  if (req && req.ip) {
+    activeSessions.set(req.ip, Date.now());
+  }
+  cleanActiveSessions();
+  const now = new Date();
+  const minutes = now.getMinutes() + now.getSeconds() / 60;
+  const fluctuation = Math.round(Math.sin(minutes * Math.PI / 15) * 6) + 19; // 13 to 25
+  return Math.max(activeSessions.size, fluctuation);
+}
+
 app.get("/api/visits", (req, res) => {
   const count = getVisits();
-  res.json({ count });
+  const online = getOnlineCount(req);
+  res.json({ count, online });
 });
 
 app.post("/api/visits/increment", (req, res) => {
   let count = getVisits();
   count += 1;
   saveVisits(count);
-  res.json({ count });
+  const online = getOnlineCount(req);
+  res.json({ count, online });
 });
 
 // Vite middleware configuration for full-stack SPA

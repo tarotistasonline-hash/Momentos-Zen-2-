@@ -54,9 +54,9 @@ function MovingDigit() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
-  const [language, setLanguage] = useState<"es" | "en" | "pt">(() => {
+  const [language, setLanguage] = useState<"es" | "en" | "pt" | "de">(() => {
     const saved = safeLocalStorage.getItem("zen_language");
-    return (saved as "es" | "en" | "pt") || "es";
+    return (saved as "es" | "en" | "pt" | "de") || "es";
   });
   
   // Voice guided meditation states
@@ -144,6 +144,13 @@ export default function App() {
   const [expandedArticle, setExpandedArticle] = useState<any>(null);
   const [loadingArticle, setLoadingArticle] = useState<boolean>(false);
 
+  // Angels Oracle State
+  const [angelsQuestion, setAngelsQuestion] = useState<string>("");
+  const [angelsReading, setAngelsReading] = useState<any>(null);
+  const [loadingAngels, setLoadingAngels] = useState<boolean>(false);
+  const [angelsAnimateState, setAngelsAnimateState] = useState<"idle" | "shuffling" | "revealing" | "done">("idle");
+  const [angelsFlipped, setAngelsFlipped] = useState<boolean>(false);
+
   // Affirmations & Custom Reminders State
   const [reminderInterval, setReminderInterval] = useState<number>(4); // default 4 hours
   const [remindersEnabled, setRemindersEnabled] = useState<boolean>(false);
@@ -157,6 +164,7 @@ export default function App() {
 
   // Visitor counter state
   const [visitorCount, setVisitorCount] = useState<number>(12847);
+  const [onlineCount, setOnlineCount] = useState<number>(18);
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
   const [showCoffeeOptions, setShowCoffeeOptions] = useState<boolean>(false);
   const coffeeRef = useRef<HTMLDivElement>(null);
@@ -368,11 +376,34 @@ export default function App() {
     fetch("/api/visits/increment", { method: "POST" })
       .then((res) => res.json())
       .then((data) => {
-        if (data && typeof data.count === "number") {
-          setVisitorCount(data.count);
+        if (data) {
+          if (typeof data.count === "number") {
+            setVisitorCount(data.count);
+          }
+          if (typeof data.online === "number") {
+            setOnlineCount(data.online);
+          }
         }
       })
       .catch((err) => console.error("Failed to increment visits:", err));
+  }, []);
+
+  // Poll visits and online visitors every 30 seconds
+  useEffect(() => {
+    const fetchCounts = () => {
+      fetch("/api/visits")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data) {
+            if (typeof data.count === "number") setVisitorCount(data.count);
+            if (typeof data.online === "number") setOnlineCount(data.online);
+          }
+        })
+        .catch((err) => console.error("Failed to fetch visits/online:", err));
+    };
+
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Save language preference to localStorage
@@ -780,6 +811,60 @@ export default function App() {
     } finally {
       setLoadingArticle(false);
     }
+  };
+
+  // Angels Oracle Reading Fetcher
+  const fetchAngelsReading = async () => {
+    setLoadingAngels(true);
+    setAngelsAnimateState("shuffling");
+    setAngelsFlipped(false);
+    setAngelsReading(null);
+
+    // Simulate shuffling/dealing
+    setTimeout(async () => {
+      setAngelsAnimateState("revealing");
+      try {
+        const response = await fetch("/api/angels", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: angelsQuestion,
+            language: language
+          })
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch angel message");
+        }
+        const data = await response.json();
+        setAngelsReading(data);
+        
+        // Trigger card flipping animation
+        setTimeout(() => {
+          setAngelsFlipped(true);
+          setAngelsAnimateState("done");
+        }, 500);
+
+        // Save to historic readings
+        saveReadingToHistory(
+          language === "en" ? "Angel Oracle" : language === "pt" ? "Oráculo de Anjos" : "Oráculo de Ángeles",
+          angelsQuestion || (language === "en" ? "General Message" : language === "pt" ? "Mensagem Geral" : "Mensaje General"),
+          data.coreMessage
+        );
+
+        // Record completed action
+        setCompletedActions((prev) => {
+          const updated = { ...prev, angels: true };
+          safeLocalStorage.setItem("zen_completed_actions", JSON.stringify(updated));
+          return updated;
+        });
+
+      } catch (err) {
+        console.error("Error drawing angel:", err);
+        setAngelsAnimateState("idle");
+      } finally {
+        setLoadingAngels(false);
+      }
+    }, 1500);
   };
 
   // 11. Helper to save readings in client-side history (localStorage)
@@ -2078,10 +2163,10 @@ export default function App() {
           {/* High-Visibility Language Selector with flag emojis & beautiful styling */}
           <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-1.5 rounded-2xl border border-slate-800/80 shadow-[0_0_15px_rgba(0,0,0,0.3)] shrink-0">
             <span className="text-[10px] text-slate-400 font-serif tracking-wider uppercase font-extrabold mr-1 flex items-center gap-1.5">
-              🌐 {language === "en" ? "Language:" : language === "pt" ? "Idioma:" : "Idioma:"}
+              🌐 {language === "en" ? "Language:" : language === "de" ? "Sprache:" : language === "pt" ? "Idioma:" : "Idioma:"}
             </span>
             <div className="flex gap-1.5">
-              {(["es", "en", "pt"] as const).map((lang) => (
+              {(["es", "en", "pt", "de"] as const).map((lang) => (
                 <button
                   key={lang}
                   onClick={() => setLanguage(lang)}
@@ -2090,10 +2175,10 @@ export default function App() {
                       ? "bg-amber-500/20 border border-amber-500/50 text-amber-300 shadow-md shadow-amber-950/45 scale-105"
                       : "border border-slate-800 text-slate-400 hover:text-slate-200 bg-slate-950/40 hover:bg-slate-900/80"
                   }`}
-                  title={lang === "es" ? "Español" : lang === "en" ? "English" : "Português"}
+                  title={lang === "es" ? "Español" : lang === "en" ? "English" : lang === "pt" ? "Português" : "Deutsch"}
                 >
-                  <span className="text-sm">{lang === "es" ? "🇪🇸" : lang === "en" ? "🇺🇸" : "🇵🇹"}</span>
-                  <span className="text-[10px] tracking-wider">{lang === "es" ? "ESP" : lang === "en" ? "ENG" : "POR"}</span>
+                  <span className="text-sm">{lang === "es" ? "🇪🇸" : lang === "en" ? "🇺🇸" : lang === "pt" ? "🇵🇹" : "🇩🇪"}</span>
+                  <span className="text-[10px] tracking-wider">{lang === "es" ? "ESP" : lang === "en" ? "ENG" : lang === "pt" ? "POR" : "DEU"}</span>
                 </button>
               ))}
             </div>
@@ -2193,21 +2278,16 @@ export default function App() {
               />
             </button>
             <button
-              onClick={() => {
-                setActiveTab("inicio");
-                setExpandedArticle(null);
-                setTimeout(() => {
-                  const el = document.getElementById("mezclador-sonidos");
-                  if (el) {
-                    el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }
-                }, 100);
-              }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center gap-1 min-w-0 text-center select-none border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40`}
+              onClick={() => { setActiveTab("angels"); setExpandedArticle(null); }}
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+                activeTab === "angels"
+                  ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
+                  : "border border-transparent text-slate-400 hover:text-slate-200"
+              }`}
             >
               <TwinkleText
                 text={dict.tabProgress}
-                glowColor="rgba(16, 185, 129, 0.15)"
+                glowColor={activeTab === "angels" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
               />
             </button>
             <button
@@ -4470,113 +4550,319 @@ export default function App() {
           <AstrologyTab language={language} />
         )}
 
-        {/* TAB 7: TRACK PROGRESS & HISTORIC READINGS */}
-        {activeTab === "progreso" && (
+        {/* TAB 7: ORACLE OF THE ANGELS OF LIGHT & INTEGRATED PROGRESS/STATS */}
+        {activeTab === "angels" && (
           <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
-            
-            {/* Configuration / Mood notifications toggle card */}
-            <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-5">
-              <div>
-                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-emerald-400" /> Configuración de Conciencia
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Establece un intervalo de atención plena para recordarte hacer pausas sagradas.
-                </p>
+            {/* Title Block */}
+            <div className="text-center flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+                <Sparkles className="w-8 h-8 text-blue-400 animate-pulse" />
               </div>
+              <h2 className="text-2xl sm:text-3xl font-serif font-black tracking-tight text-white mt-2">
+                {language === "en" ? "Oracle of the Angels of Light" : language === "pt" ? "Oráculo dos Anjos de Luz" : "Oráculo de los Ángeles de Luz"}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-xl leading-relaxed">
+                {language === "en"
+                  ? "Formulate an intention or query, draw a celestial card, and let the loving wisdom of the Archangels guide your path."
+                  : language === "pt"
+                  ? "Formule uma intenção ou pergunta, tire uma carta celestial e deixe a sabedoria amorosa dos Arcanjos guiar seu caminho."
+                  : "Formula una intención o pregunta de tu corazón, extrae una carta celestial y permite que la sabiduría amorosa de los Arcánteles sintonice tu camino."}
+              </p>
+            </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-900">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-amber-400 animate-pulse" />
+            {/* Main Interactive Card Drawing Panel */}
+            <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 items-center shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+              {angelsAnimateState === "idle" && (
+                <div className="w-full max-w-md flex flex-col gap-5 items-center">
+                  <div className="w-full flex flex-col gap-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center sm:text-left">
+                      {language === "en" ? "YOUR SPIRITUAL INTENTION OR QUESTION:" : language === "pt" ? "SUA INTENÇÃO OU PERGUNTA ESPIRITUAL:" : "TU INTENCIÓN O PREGUNTA ESPIRITUAL:"}
+                    </label>
+                    <input
+                      type="text"
+                      value={angelsQuestion}
+                      onChange={(e) => setAngelsQuestion(e.target.value)}
+                      placeholder={
+                        language === "en"
+                          ? "What do my angels want me to know today?..."
+                          : language === "pt"
+                          ? "O que meus anjos querem que eu saiba hoje?..."
+                          : "¿Qué necesitan mis ángeles que comprenda hoy?..."
+                      }
+                      className="w-full bg-slate-950/80 border border-slate-800 rounded-2xl px-4 py-3 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium text-center"
+                    />
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-200">Recordatorios de Atención Plena</h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      {language === "en" ? "Periodic mindfulness messages" : language === "pt" ? "Mensagens periódicas de atenção plena" : "Mensajes de atención plena periódicos"}
+
+                  {/* Draw button */}
+                  <button
+                    onClick={fetchAngelsReading}
+                    className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-serif text-xs font-bold uppercase tracking-widest rounded-2xl border border-blue-400/30 shadow-[0_4px_20px_rgba(59,130,246,0.25)] hover:shadow-[0_4px_25px_rgba(59,130,246,0.35)] active:scale-95 transition-all cursor-pointer"
+                  >
+                    {language === "en" ? "Draw Angel Card" : language === "pt" ? "Retirar Carta do Anjo" : "Extraer Carta Celestial"}
+                  </button>
+                </div>
+              )}
+
+              {angelsAnimateState === "shuffling" && (
+                <div className="flex flex-col items-center justify-center gap-6 py-10">
+                  <div className="relative w-28 h-40 flex items-center justify-center">
+                    <motion.div
+                      animate={{
+                        x: [-10, 10, -10],
+                        rotate: [-5, 5, -5],
+                      }}
+                      transition={{ repeat: Infinity, duration: 0.8 }}
+                      className="absolute w-24 h-36 bg-gradient-to-br from-blue-900 to-indigo-950 border border-blue-500/30 rounded-2xl shadow-xl flex items-center justify-center"
+                    >
+                      <Feather className="w-8 h-8 text-blue-400 opacity-60" />
+                    </motion.div>
+                    <motion.div
+                      animate={{
+                        x: [10, -10, 10],
+                        rotate: [5, -5, 5],
+                      }}
+                      transition={{ repeat: Infinity, duration: 0.8 }}
+                      className="absolute w-24 h-36 bg-gradient-to-br from-indigo-950 to-blue-900 border border-indigo-500/30 rounded-2xl shadow-xl flex items-center justify-center -rotate-6 translate-x-2"
+                    >
+                      <Sparkles className="w-8 h-8 text-indigo-400 opacity-60" />
+                    </motion.div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-serif font-bold text-blue-300 animate-pulse">
+                      {language === "en" ? "Sensing your energetic frequency..." : language === "pt" ? "Sintonizando sua frequência energética..." : "Sintonizando tu frecuencia energética..."}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">
+                      {language === "en" ? "Consulting the angels of light" : language === "pt" ? "Consultando os anjos de luz" : "Invocando a los mensajeros celestiales"}
                     </p>
                   </div>
                 </div>
+              )}
 
-                <div className="flex items-center gap-4">
-                  <select
-                    value={reminderInterval}
-                    onChange={(e) => setReminderInterval(parseInt(e.target.value))}
-                    className="bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:outline-none"
-                  >
-                    <option value={1}>Cada 1 hora</option>
-                    <option value={4}>Cada 4 horas</option>
-                    <option value={8}>Cada 8 horas</option>
-                  </select>
-
-                  <button
-                    onClick={() => {
-                      setRemindersEnabled(!remindersEnabled);
-                      if (!remindersEnabled) triggerCustomNotification("¡Recordatorios Zen activados! Nos mantendremos conectados.");
-                    }}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                      remindersEnabled ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/40" : "bg-slate-800 text-slate-400"
-                    }`}
-                  >
-                    {remindersEnabled ? "Habilitados" : "Deshabilitados"}
-                  </button>
+              {angelsAnimateState === "revealing" && (
+                <div className="flex flex-col items-center justify-center gap-4 py-12">
+                  <div className="w-12 h-12 rounded-full border-2 border-blue-500/20 border-t-blue-400 animate-spin"></div>
+                  <p className="text-xs text-slate-400 font-mono">
+                    {language === "en" ? "Channeling celestial guidance..." : language === "pt" ? "Canalizando orientação celestial..." : "Canalizando consejo divino..."}
+                  </p>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* Statistics Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
-                <span className="text-[10px] font-bold text-slate-500 tracking-wider">RACHA DIARIA</span>
-                <div className="text-3xl font-serif font-black text-amber-400 mt-1">{streak}</div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Días seguidos</span>
-              </div>
+              {angelsAnimateState === "done" && angelsReading && (
+                <div className="w-full flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+                  
+                  {/* Glowing Oracle Card */}
+                  <div className="shrink-0 relative group">
+                    <div 
+                      className="relative w-64 h-96 rounded-3xl p-6 flex flex-col justify-between items-center text-center shadow-2xl transition-all duration-700"
+                      style={{
+                        background: "linear-gradient(135deg, #090d16 0%, #111a2e 100%)",
+                        border: "2px solid rgba(59, 130, 246, 0.4)",
+                        boxShadow: "0 0 35px rgba(59, 130, 246, 0.25)"
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-blue-500/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                      
+                      {/* Card Header/Virtue */}
+                      <span className="text-[9px] font-bold tracking-widest text-blue-400 uppercase bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/10">
+                        {angelsReading.crystal}
+                      </span>
 
-              <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
-                <span className="text-[10px] font-bold text-slate-500 tracking-wider">RESPIRACIÓN</span>
-                <div className="text-3xl font-serif font-black text-emerald-400 mt-1">🧘 {minutesMeditated}M</div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Minutos totales</span>
-              </div>
-
-              <div className="col-span-2 sm:col-span-1 p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
-                <span className="text-[10px] font-bold text-slate-500 tracking-wider">TAREAS DIARIAS</span>
-                <div className="text-3xl font-serif font-black text-indigo-400 mt-1">
-                  ✅ {Object.values(completedActions).filter(Boolean).length}
-                </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">Acciones completadas</span>
-              </div>
-            </div>
-
-            {/* Readings History Logs */}
-            <div className="flex flex-col gap-4">
-              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                <RotateCcw className="w-5 h-5 text-emerald-400" /> Diario de Lecturas & Consultas
-              </h3>
-              <p className="text-xs text-slate-400">
-                Lista histórica de tus lecturas de Tarot, Runas y Numerología para recordar tus consejos espirituales del pasado.
-              </p>
-
-              <div className="flex flex-col gap-3">
-                {readingsHistory.length === 0 ? (
-                  <div className="p-6 bg-slate-900/10 border border-slate-900/60 rounded-3xl text-center text-xs text-slate-500 font-semibold italic">
-                    {language === "en" ? "You haven't saved any Tarot or Runes readings yet. Perform a query to begin!" : language === "pt" ? "Você ainda não salvou nenhuma leitura de Tarot ou Runas. Faça uma consulta para começar!" : "Aún no has guardado ninguna lectura de Tarot o Runas. ¡Realiza una consulta para comenzar!"}
-                  </div>
-                ) : (
-                  readingsHistory.map((record) => (
-                    <div key={record.id} className="p-4 bg-slate-950/40 border border-slate-900 rounded-2xl flex flex-col gap-2">
-                      <div className="flex justify-between items-center text-[10px] font-bold">
-                        <span className="text-emerald-400 uppercase tracking-widest">{record.type}</span>
-                        <span className="text-slate-500">{record.date}</span>
+                      {/* Card Graphic */}
+                      <div className="w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center my-4 animate-pulse">
+                        <Feather className="w-10 h-10 text-blue-300" />
                       </div>
-                      <h4 className="text-xs font-bold text-slate-200">Pregunta: "{record.query}"</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
-                        {record.summary}
+
+                      {/* Card Name */}
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-xl font-serif font-black text-white tracking-wide">
+                          {angelsReading.angelName}
+                        </h3>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                          {angelsReading.angelTitle}
+                        </p>
+                      </div>
+
+                      {/* Card Footer Decoration */}
+                      <div className="w-full flex justify-center items-center gap-2 mt-4">
+                        <div className="h-px bg-blue-500/20 flex-1"></div>
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        <div className="h-px bg-blue-500/20 flex-1"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Channeled Message Details */}
+                  <div className="flex-1 w-full flex flex-col gap-5">
+                    <div>
+                      <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">
+                        {language === "en" ? "CHANNELED ANGELIC MESSAGE" : language === "pt" ? "MENSAGEM CANALIZADA" : "MENSAJE CELESTIAL CANALIZADO"}
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-serif font-black text-slate-100 mt-1">
+                        {angelsReading.angelTitle}
+                      </h3>
+                    </div>
+
+                    <div className="text-slate-300 text-xs sm:text-sm leading-relaxed space-y-3 font-semibold bg-slate-950/30 p-5 rounded-2xl border border-slate-900">
+                      {angelsReading.coreMessage.split("\n").map((para: string, i: number) => (
+                        <p key={i}>{para}</p>
+                      ))}
+                    </div>
+
+                    {/* Affirmation Box */}
+                    <div className="p-4 bg-gradient-to-r from-blue-950/30 to-indigo-950/20 border border-blue-500/25 rounded-2xl flex items-start gap-3">
+                      <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+                          {language === "en" ? "DAILY LIGHT AFFIRMATION" : language === "pt" ? "AFIRMAÇÃO DIÁRIA DE LUZ" : "AFIRMACIÓN DIÁRIA DE LUZ"}
+                        </h4>
+                        <p className="text-xs text-white font-semibold mt-1 italic">
+                          "{angelsReading.affirmation}"
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Practical Connection Action */}
+                    <div className="p-4 bg-slate-950/50 border border-slate-900 rounded-2xl flex items-start gap-3">
+                      <Compass className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">
+                          {language === "en" ? "CONNECTION EXERCISE" : language === "pt" ? "EXERCÍCIO DE CONEXÃO" : "EJERCICIO DE CONEXIÓN"}
+                        </h4>
+                        <p className="text-xs text-slate-300 font-semibold mt-1 leading-relaxed">
+                          {angelsReading.practicalAction}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="mt-2 flex justify-center sm:justify-start">
+                      <button
+                        onClick={() => {
+                          setAngelsAnimateState("idle");
+                          setAngelsReading(null);
+                        }}
+                        className="px-6 py-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                      >
+                        {language === "en" ? "Receive another message" : language === "pt" ? "Receber outro conselho" : "Recibir otra guía"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* PROGRESS, STATISTICS, AND RECORDINGS HISTORY */}
+            <div className="border-t border-slate-900/60 pt-8 flex flex-col gap-8">
+              
+              {/* Configuration / Mood notifications toggle card */}
+              <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <Settings className="w-4 h-4 text-emerald-400" /> Configuración de Conciencia
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Establece un intervalo de atención plena para recordarte hacer pausas sagradas.
+                  </p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-900">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                      <Bell className="w-5 h-5 text-amber-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-200">Recordatorios de Atención Plena</h4>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        {language === "en" ? "Periodic mindfulness messages" : language === "pt" ? "Mensagens periódicas de atenção plena" : "Mensajes de atención plena periódicos"}
                       </p>
                     </div>
-                  ))
-                )}
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <select
+                      value={reminderInterval}
+                      onChange={(e) => setReminderInterval(parseInt(e.target.value))}
+                      className="bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:outline-none"
+                    >
+                      <option value={1}>Cada 1 hora</option>
+                      <option value={4}>Cada 4 horas</option>
+                      <option value={8}>Cada 8 horas</option>
+                    </select>
+
+                    <button
+                      onClick={() => {
+                        setRemindersEnabled(!remindersEnabled);
+                        if (!remindersEnabled) triggerCustomNotification("¡Recordatorios Zen activados! Nos mantendremos conectados.");
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        remindersEnabled ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/40" : "bg-slate-800 text-slate-400"
+                      }`}
+                    >
+                      {remindersEnabled ? "Habilitados" : "Deshabilitados"}
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* Statistics Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 tracking-wider">RACHA DIARIA</span>
+                  <div className="text-3xl font-serif font-black text-amber-400 mt-1">{streak}</div>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Días seguidos</span>
+                </div>
+
+                <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 tracking-wider">RESPIRACIÓN</span>
+                  <div className="text-3xl font-serif font-black text-emerald-400 mt-1">🧘 {minutesMeditated}M</div>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Minutos totales</span>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
+                  <span className="text-[10px] font-bold text-slate-500 tracking-wider">TAREAS DIARIAS</span>
+                  <div className="text-3xl font-serif font-black text-indigo-400 mt-1">
+                    ✅ {Object.values(completedActions).filter(Boolean).length}
+                  </div>
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Acciones completadas</span>
+                </div>
+              </div>
+
+              {/* Readings History Logs */}
+              <div className="flex flex-col gap-4">
+                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5 text-emerald-400" /> Diario de Lecturas & Consultas
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Lista histórica de tus lecturas de Tarot, Runas, Ángeles y Numerología para recordar tus consejos espirituales del pasado.
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  {readingsHistory.length === 0 ? (
+                    <div className="p-6 bg-slate-900/10 border border-slate-900/60 rounded-3xl text-center text-xs text-slate-500 font-semibold italic">
+                      {language === "en" ? "You haven't saved any readings yet. Perform a query to begin!" : language === "pt" ? "Você ainda não salvou nenhuma consulta. Faça uma consulta para começar!" : "Aún no has guardado ninguna lectura. ¡Realiza una consulta para comenzar!"}
+                    </div>
+                  ) : (
+                    readingsHistory.map((record) => (
+                      <div key={record.id} className="p-4 bg-slate-950/40 border border-slate-900 rounded-2xl flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-[10px] font-bold">
+                          <span className="text-emerald-400 uppercase tracking-widest">{record.type}</span>
+                          <span className="text-slate-500">{record.date}</span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-200">Pregunta: "{record.query}"</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
+                          {record.summary}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
             </div>
+
           </div>
         )}
 
@@ -4647,22 +4933,39 @@ export default function App() {
         </div>
 
         {/* Visitors badge twinkling below */}
-        <button
-          onClick={handleVisitsClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/50 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-[10px] transition-all cursor-pointer select-none active:scale-95 shadow-md shadow-black/40 mt-1"
-          title={language === "en" ? "Click to reset or return to Home" : "Clic para reiniciar o volver al Inicio"}
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
-          </span>
-          <span className="text-slate-300 font-semibold flex items-center gap-1">
-            <span>{language === "en" ? "Visitors:" : "Visitantes:"}</span>
-            <span className="font-mono text-amber-400 font-bold animate-twinkle">
-              {visitorCount.toLocaleString()}
+        <div className="flex items-center gap-2.5 justify-center mt-2 flex-wrap">
+          <button
+            onClick={handleVisitsClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/50 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-[10px] transition-all cursor-pointer select-none active:scale-95 shadow-md shadow-black/40"
+            title={language === "en" ? "Click to reset or return to Home" : "Clic para reiniciar o volver al Inicio"}
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500 shadow-[0_0_8px_rgba(251,191,36,0.8)]"></span>
             </span>
-          </span>
-        </button>
+            <span className="text-slate-300 font-semibold flex items-center gap-1">
+              <span>{language === "en" ? "Visitors:" : "Visitantes:"}</span>
+              <span className="font-mono text-amber-400 font-bold animate-twinkle">
+                {visitorCount.toLocaleString()}
+              </span>
+            </span>
+          </button>
+
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/50 border border-slate-800 text-[10px] transition-all select-none shadow-md shadow-black/40"
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+            </span>
+            <span className="text-slate-300 font-semibold flex items-center gap-1">
+              <span>{language === "en" ? "Online Visitors:" : language === "pt" ? "Visitantes online:" : "Visitantes en línea:"}</span>
+              <span className="font-mono text-emerald-400 font-bold animate-pulse">
+                {onlineCount.toLocaleString()}
+              </span>
+            </span>
+          </div>
+        </div>
       </footer>
 
       {/* RESET & NAVIGATION DIALOG */}

@@ -116,7 +116,7 @@ export interface DictionaryEntry {
   progMinShort: string;
 }
 
-export const DICTIONARY: Record<"es" | "en" | "pt", DictionaryEntry> = {
+export const DICTIONARY: Record<"es" | "en" | "pt" | "de", DictionaryEntry> = {
   es: {
     title: "Momentos Zen • Música para Meditar",
     subtitle: "MÚSICA RELAX • ESPACIO DE PAZ INTERIOR",
@@ -127,7 +127,7 @@ export const DICTIONARY: Record<"es" | "en" | "pt", DictionaryEntry> = {
     tabKabbalah: "Cábala",
     tabNumerology: "Numerología",
     tabArticles: "Artículos",
-    tabProgress: "Música",
+    tabProgress: "Ángeles",
     tabAstrology: "Astros",
     zenReminder: "RECORDATORIO ZEN",
     howIsMind: "¿Cómo te sentís hoy?",
@@ -249,7 +249,7 @@ export const DICTIONARY: Record<"es" | "en" | "pt", DictionaryEntry> = {
     tabKabbalah: "Kabbalah",
     tabNumerology: "Numerology",
     tabArticles: "Articles",
-    tabProgress: "Music",
+    tabProgress: "Angels",
     tabAstrology: "Astros",
     zenReminder: "ZEN REMINDER",
     howIsMind: "How is your mind today?",
@@ -371,7 +371,7 @@ export const DICTIONARY: Record<"es" | "en" | "pt", DictionaryEntry> = {
     tabKabbalah: "Cabala",
     tabNumerology: "Numerologia",
     tabArticles: "Artigos",
-    tabProgress: "Música",
+    tabProgress: "Anjos",
     tabAstrology: "Astros",
     zenReminder: "LEMBRETE ZEN",
     howIsMind: "Como está a sua mente hoje?",
@@ -482,10 +482,132 @@ export const DICTIONARY: Record<"es" | "en" | "pt", DictionaryEntry> = {
     progHistoryTitle: "Histórico de Revelações Ancestrais",
     progStreakDays: "dias",
     progMinShort: "min"
+  },
+  de: {
+    title: "Zen-Momente • Meditationsmusik",
+    subtitle: "RELAX-MUSIK • RAUM FÜR INNERE RUHE",
+    tagline: "Eine interaktive ganzheitliche Oase mit Tarot, Kabbala, Numerologie und Achtsamkeit.",
+    tabHome: "Meditation",
+    tabTarot: "Tarot",
+    tabRunes: "Runen",
+    tabKabbalah: "Kabbala",
+    tabNumerology: "Numerologie",
+    tabArticles: "Artikel",
+    tabProgress: "Engel",
+    tabAstrology: "Astros",
+    zenReminder: "ZEN-ERINNERUNG",
+    howIsMind: "Wie geht es deinem Geist heute?",
+    howIsMindDesc: "Wähle deinen emotionalen Zustand, um maßgeschneiderte Reflexionen und Übungen zu erhalten.",
+    moodCalm: "🧘 Gelassen",
+    moodAnxious: "😰 Ängstlich",
+    moodSad: "😢 Traurig",
+    moodFrustrated: "😤 Frustriert",
+    moodTired: "😴 Müde",
+    moodHappy: "😊 Glücklich",
+    stressLevel: "STRESSNIVEAU / UNRUHE:",
+    generateZenBtn: "Erzeuge heutigen Zen-Leitfaden",
+    generatingZen: "Erzeuge Raum der Ruhe...",
+    generateZenActive: "Raum der Ruhe aktiv",
+    breathingTitle: "Zen-Atmung",
+    breathingDesc: "Quadratische Atemführung, um deinen Geist sofort zu beruhigen.",
+    breathInhale: "Einatmen",
+    breathHold1: "Halten",
+    breathExhale: "Ausatmen",
+    breathHold2: "Leere",
+    breathIdle: "Bereit",
+    sessionLength: "SITZUNGSDAUER:",
+    startBreathing: "Atmung starten",
+    stopSession: "Sitzung beenden",
+    soundMixer: "Relax-Soundmixer",
+    soundMixerDesc: "Aktiviere und kalibriere Umgebungsgeräusche für deine aktive Meditation.",
+    volume: "Lautstärke",
+    soundRain: "🌧️ Regen",
+    soundWaves: "🌊 Meereswellen",
+    soundBowl: "🥣 Tibetische Klangschale",
+    soundBirds: "🐦 Waldvögel",
+    soundBonfire: "🔥 Entspannendes Lagerfeuer",
+    soundCosmicWind: "🌌 Sternenwind",
+    soundBells: "🔔 Himmlische Glocken",
+    soundMusic: "🎵 Hintergrundmusik",
+    musicVolume: "Musiklautstärke",
+    astrologyTitle: "Astrologische Transite des Tages",
+    astrologyDesc: "Analysiere die aktuellen Planetenbewegungen und verstehe, wie astronomische Positionen dein Wohlbefinden beeinflussen.",
+    astrologyBtn: "Astrologisches Klima abfragen",
+    astrologyLoading: "Berechne astrologische Transite...",
+    astrologyResultTitle: "Aktuelles astrologisches Klima",
+    astrologyAdviceTitle: "Ratschlag des Astrologen",
+    voiceGuide: "Geführte Sprachmeditationen",
+    voiceGuideDesc: "Höre mystische geführte Meditationen, die mit Achtsamkeitstechniken erstellt wurden.",
+    voiceMedSession: "MEDITATIONSTHEMA:",
+    voiceSelectSession: "Sitzung auswählen",
+    voiceSelectLanguage: "Sprachausgabe:",
+    voiceMeds: [
+      { id: "calm-anxiety", name: "Angst beruhigen", desc: "Besänftige die Flut der Gedanken und finde deine friedliche Mitte." },
+      { id: "chakra-alignment", name: "Chakra-Ausrichtung", desc: "Visualisiere und balanciere die Energiezentren deines Wesens." },
+      { id: "deep-sleep", name: "Schlafverbindung", desc: "Lasse die Spannungen des Tages los und bereite dich auf einen erholsamen Schlaf vor." },
+      { id: "kabbalah-light", name: "Licht der Kabbala", desc: "Richte deine Seele auf die himmlischen Sphären des Lebensbaums aus." }
+    ],
+    playVoice: "Sprachführung starten",
+    playingVoice: "Spiele Stimme ab...",
+    stopVoice: "Stimme stoppen",
+    tarotTitle: "Therapeutisches Tarot-Lesen",
+    tarotDesc: "Konsultiere die heiligen Archetypen, um deine Gegenwart zu erleuchten und dein Bewusstsein zu erweitern.",
+    tarotQuestionPlaceholder: "Schreibe deine Frage oder spirituelle Absicht hier...",
+    tarotSpreadType: "ART DER LEGUNG:",
+    tarotCard1: "Eine Karte (Tageskarte)",
+    tarotCard3: "Drei Karten (Vergangenheit, Gegenwart, Zukunft)",
+    tarotCard5: "Fünf Karten (Kosmisches Kreuz)",
+    tarotBtn: "Kartenbeschwörung",
+    tarotLoading: "Öffne das Portal der Weisheit...",
+    tarotSummaryTitle: "Offenbarung des Tarot",
+    tarotAdviceTitle: "Ratschlag der Legung",
+    runesTitle: "Ahnenschatz der Nordischen Runen",
+    runesDesc: "Greife auf die mystische Weisheit von Yggdrasil und den direkten Rat von Odin zu.",
+    runesQuestionPlaceholder: "Befrage die nordischen Runen...",
+    runesSpreadType: "LEGEMETHODE:",
+    runesCard1: "Einzelne Rune",
+    runesCard3: "Dreifacher Runenrat",
+    runesBtn: "Runen ziehen",
+    runesLoading: "Werfe die heiligen Steine in den Wind...",
+    runesSummaryTitle: "Runen-Orakel",
+    runesAdviceTitle: "Ratschlag von Odin",
+    numTitle: "Pythagoreische Numerologie",
+    numDesc: "Entdecke den mathematischen und Schwingungs-Bauplan deines Namens und Geburtsdatums.",
+    numNameLabel: "Vollständiger Name (Ohne Akzente):",
+    numBirthLabel: "Geburtsdatum:",
+    numBtn: "Schwingung berechnen",
+    numLoading: "Dekodiere kosmische Frequenzen...",
+    numResultTitle: "Dein Schwingungsprofil",
+    numLifePath: "Lebensweg",
+    numExpression: "Innewohnende Fähigkeiten",
+    numSoulUrge: "Wünsche der Seele",
+    numPersonality: "Soziale Maske",
+    kabTitle: "Kabbala und Lebensbaum",
+    kabDesc: "Bestimme deine herrschende Sefirah, um deine psychologische Energie auf die göttliche Ebene auszurichten.",
+    kabAreaLabel: "Fokus deiner spirituellen Energie:",
+    kabBtn: "Ausrichtungskarte erstellen",
+    kabLoading: "Kartiere die Sphären des Baumes...",
+    kabResultTitle: "Ausrichtung des Lebensbaums",
+    kabMedTitle: "Meditation der aktiven Sefirah",
+    kabBlessingTitle: "Segen des Lebensbaums",
+    libTitle: "Achtsamkeits-Bibliothek",
+    libDesc: "Alte Weisheit und kurze psychologische Techniken für den täglichen inneren Frieden.",
+    libReadMore: "Wissen vertiefen →",
+    libBackBtn: "← Zurück zur Bibliothek",
+    libDeepKnowledge: "Rufe tiefes Wissen ab...",
+    progTitle: "Fortschritts-Logbuch",
+    progDesc: "Verfolge deine Beständigkeit und erlebe die Weisheit deiner historischen Lesungen neu.",
+    progStreak: "Aktive Strähne",
+    progMinutes: "Meditierte Minuten",
+    progActions: "Abgeschlossene Aktionen",
+    progNoHistory: "Noch keine Lesungen im Logbuch vorhanden. Erkunde Tarot oder Runen, um zu beginnen.",
+    progHistoryTitle: "Geschichte der Ahnen-Offenbarungen",
+    progStreakDays: "Tage",
+    progMinShort: "Min"
   }
 };
 
-export const MINDFULNESS_ARTICLES_LOCALIZED: Record<"es" | "en" | "pt", any[]> = {
+export const MINDFULNESS_ARTICLES_LOCALIZED: Record<"es" | "en" | "pt" | "de", any[]> = {
   es: [
     { id: "calmar-mente", title: "5 Técnicas para calmar la mente en 5 minutos", summary: "Ejercicios rápidos y discretos para recuperar el centro en cualquier situación estresante.", emoji: "🧘" },
     { id: "respirar-calma", title: "Respiración: El Secreto de la Calma", summary: "Descubre cómo regular tu sistema nervioso autónomo mediante la respiración diafragmática.", emoji: "🌬️" },
@@ -510,13 +632,22 @@ export const MINDFULNESS_ARTICLES_LOCALIZED: Record<"es" | "en" | "pt", any[]> =
     { id: "sueno-zen", title: "Rituais de Sono Profundo", summary: "Como desconectar sua mente da hiperestimulação digital para um sono verdadeiramente reparador.", emoji: "🌙" },
     { id: "atencion-plena", title: "Atenção Plena na Vida Cotidiana", summary: "Práticas simples para transformar tarefas cotidianas (lavar louça, caminhar) em meditação ativa.", emoji: "🧘" },
     { id: "soltar-estres", title: "A Arte de Soltar e Deixar Ir", summary: "Estratégias budistas e psicológicas para se desvencilhar de preocupações fora do seu controle.", emoji: "🌊" },
-    { id: "astrologia-vida", title: "Astrologia e Ciclos Vitais", summary: "Entenda como os trânsitos celestes refletem fases evolutivas de sua mente e espírito.", emoji: "🪐" },
+    { id: "astrologia-vida", title: "Astrologia e Ciclos Vitais", summary: "Entenda como os trânisitos celestes refletem fases evolutivas de sua mente e espírito.", emoji: "🪐" },
     { id: "sonidos-sanadores", title: "Frequências Solfeggio de Bem-estar", summary: "Como as ondas acústicas estimulam a harmonia cerebral, reduzem o cortisol e acalmam a ansiedade.", emoji: "🎵" }
+  ],
+  de: [
+    { id: "calmar-mente", title: "5 Techniken zur Beruhigung des Geistes in 5 Minuten", summary: "Schnelle und diskrete Übungen zur Wiedererlangung des Fokus in jeder stressigen Situation.", emoji: "🧘" },
+    { id: "respirar-calma", title: "Atmung: Das Geheimnis der Ruhe", summary: "Entdecke, wie du dein vegetatives Nervensystem durch Zwerchfellatmung regulieren kannst.", emoji: "🌬️" },
+    { id: "sueno-zen", title: "Rituale für tiefen Schlaf", summary: "Wie du deinen Geist von digitaler Reizüberflutung befreist, um einen wirklich erholsamen Schlaf zu finden.", emoji: "🌙" },
+    { id: "atencion-plena", title: "Achtsamkeit im Alltag", summary: "Einfache Übungen, um alltägliche Aufgaben (Geschirrspülen, Gehen) in aktive Meditation zu verwandeln.", emoji: "🧘" },
+    { id: "soltar-estres", title: "Die Kunst des Loslassens", summary: "Buddhistische und psychologische Strategien, um dich von Sorgen außerhalb deiner Kontrolle zu befreien.", emoji: "🌊" },
+    { id: "astrologia-vida", title: "Astrologie und Lebenszyklen", summary: "Verstehe, wie himmlische Transite die Entwicklungsphasen deines Geistes und deiner Seele widerspiegeln.", emoji: "🪐" },
+    { id: "sonidos-sanadores", title: "Solfeggio-Frequenzen für das Wohlbefinden", summary: "Wie Schallwellen die Gehirnharmonie anregen, Cortisol senken und Ängste lindern.", emoji: "🎵" }
   ]
 };
 
 // Guided Voice Meditation Scripts (Split into elegant segments for the narrator speech synthesis)
-export const VOICE_SCRIPTS: Record<"es" | "en" | "pt", Record<string, string[]>> = {
+export const VOICE_SCRIPTS: Record<"es" | "en" | "pt" | "de", Record<string, string[]>> = {
   es: {
     "calm-anxiety": [
       "Cierra los ojos y pon la espalda recta.",
@@ -617,6 +748,40 @@ export const VOICE_SCRIPTS: Record<"es" | "en" | "pt", Record<string, string[]>>
       "Conecte-se com Malkuth, sentindo o reino físico sagrado sob seus pés, um canal de manifestação divina.",
       "Sinta a luz infinita de Keter descer do alto e abençoar cada uma de suas células.",
       "Leve essa paz com você, sabendo que você faz parte de um plano perfeito e sagrado."
+    ]
+  },
+  de: {
+    "calm-anxiety": [
+      "Schließe deine Augen und richte deine Wirbelsäule auf.",
+      "Atme sehr tief und langsam durch die Nase ein... spüre, wie kühle Luft einströmt... und atme sanft durch den Mund aus, während du alle Last von deinen Schultern abfallen lässt.",
+      "Spüre das Gewicht deines Körpers, getragen von der Erde. Du bist hier sicher. Die Vergangenheit ist vorbei, die Zukunft nur ein Gedanke. Nur dieser präzise Augenblick existiert.",
+      "Lasse alle Erwartungen los. Wenn ein sorgenvoller Gedanke deinen Geist durchquert, bekämpfe ihn nicht. Beobachte ihn wie eine vorüberziehende Wolke an einem weiten Himmel des Bewusstseins.",
+      "Wiederhole geistig mit mir: Ich bin in Frieden. Alles ist gut. Ich vertraue dem Fluss des Lebens.",
+      "Öffne langsam deine Augen und spüre die Leichtigkeit und Ruhe in dir."
+    ],
+    "chakra-alignment": [
+      "Setze dich bequem hin und atme in einem gleichmäßigen Rhythmus.",
+      "Visualisiere ein lebendiges rotes Licht an der Basis deiner Wirbelsäule, das dir Stabilität gibt und dich mit der Erde verbindet.",
+      "Spüre nun ein warmes, goldenes Licht in deinem Solarplexus, das deine innere Kraft, dein Vertrauen und deine Lebenskraft entzündet.",
+      "Bringe deine Aufmerksamkeit in die Mitte deiner Brust. Spüre, wie sich mit jedem Atemzug ein smaragdgrünes Licht ausdehnt und bedingungslose Liebe und Vergebung für dich selbst und die Welt ausstrahlt.",
+      "Visualisiere ein strahlend blaues Licht in deiner Kehle, das es dir ermöglicht, deine Wahrheit mit Ehrlichkeit und Liebe auszudrücken.",
+      "Stelle dir schließlich ein reines violettes Licht auf deinem Scheitel vor, das dich mit der universellen kosmischen Weisheit verbindet. Spüre die vollkommene Harmonie in deinem gesamten Wesen."
+    ],
+    "deep-sleep": [
+      "Lege dich bequem hin und lasse deine Arme an den Seiten ruhen.",
+      "Schließe sanft deine Augen. Spüre die Sanftheit deines Atems, wie eine friedliche Ebbe und Flut, die in der Nacht auf- und absteigt.",
+      "Spüre, wie sich deine Augenlider und dein Kiefer entspannen, und bemerke, wie dein Kopf angenehm schwer wird.",
+      "Es gibt jetzt nichts zu lösen. Der Tag ist vorbei. Du hast dein Bestes getan. Jetzt ist es an der Zeit, alles loszulassen.",
+      "Stelle dir vor, du treibst in einem warmen Ozean unter einem von funkelnden Sternen übersäten Himmel. Jeder Stern wacht über deine Ruhe.",
+      "Erlaube dir, in einen tiefen, heilenden und friedlichen Schlaf zu sinken. Gute Nacht."
+    ],
+    "kabbalah-light": [
+      "Schließe deine Augen und stelle dir den großen Lebensbaum vor dir vor.",
+      "Visualisiere die goldene Sphäre von Tiferet, die hell in deinem Herzen leuchtet und Schönheit und Balance in deine Seele bringt.",
+      "Spüre die schützende und strukturierende Energie von Gevurah und bringe sie in Einklang mit der liebevollen und barmherzigen Ausdehnung von Chesed.",
+      "Verbinde dich mit Malkuth und spüre das heilige physische Reich unter deinen Füßen, einen Kanal der göttlichen Manifestation.",
+      "Spüre das unendliche Licht von Keter, das von oben herabsteigt und jede einzelne Zelle deines Körpers segnet.",
+      "Trage diesen Frieden mit dir, im Wissen, dass du Teil eines perfekten und heiligen Entwurfs bist."
     ]
   }
 };
