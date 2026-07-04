@@ -41,6 +41,8 @@ import { ZenVisualizer } from "./components/ZenVisualizer";
 import { exportReadingAsImage } from "./utils/exportImage";
 // @ts-ignore
 import kabbalahTreeOfLifeImg from "./assets/images/kabbalah_tree_of_life_1782922797280.jpg";
+// @ts-ignore
+import zenMeditationImg from "./assets/images/zen_meditation_1783202684621.jpg";
 
 function MovingDigit() {
   const [val, setVal] = useState<number>(() => Math.floor(Math.random() * 10));
@@ -2194,7 +2196,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       
       {/* 1. Header Area with Prominent, Accessible Translator */}
-      <header className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-900 py-3.5 px-4 sm:px-6 flex flex-col gap-3.5">
+      <header className="relative md:sticky md:top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-900 py-3.5 px-4 sm:px-6 flex flex-col gap-3.5">
         
         {/* Top Bar: Title & Beautiful Prominent Language Switcher */}
         <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-900/60 pb-3">
@@ -2696,13 +2698,18 @@ export default function App() {
                         </span>
                       </>
                     ) : (
-                      <motion.span
-                        className="text-4xl block cursor-pointer select-none"
+                      <motion.div
+                        className="w-24 h-24 rounded-full overflow-hidden border border-emerald-500/20 shadow-lg cursor-pointer select-none"
                         animate={{ y: [0, -4, 0] }}
                         transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
                       >
-                        🧘
-                      </motion.span>
+                        <img
+                          src={zenMeditationImg}
+                          alt="Zen Meditation"
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </motion.div>
                     )}
                   </motion.div>
                 </div>
@@ -3475,10 +3482,10 @@ export default function App() {
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
                     {language === "en" 
-                      ? "Share your peace, reflections, and experiences with other souls." 
+                      ? "Share your peace, messages, and experiences with other souls." 
                       : language === "pt"
-                      ? "Compartilhe sua paz, reflexões e experiências com outras almas."
-                      : "Comparte tu paz, reflexiones y experiencias con otras almas."}
+                      ? "Compartilhe sua paz, mensagens e experiências com outras almas."
+                      : "Comparte tu paz, mensajes y experiencias con otras almas."}
                   </p>
                 </div>
                 
@@ -3547,45 +3554,30 @@ export default function App() {
                   {language === "en" ? "Leave a Message" : language === "pt" ? "Deixe uma Mensagem" : "Dejar un Mensaje"}
                 </h4>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
-                      {language === "en" ? "Name" : language === "pt" ? "Nome" : "Nombre"} <span className="text-amber-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={guestbookName}
-                      onChange={(e) => setGuestbookName(e.target.value)}
-                      placeholder={language === "en" ? "Your name..." : language === "pt" ? "Seu nome..." : "Tu nombre..."}
-                      className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
-                      {language === "en" ? "City / Country" : language === "pt" ? "Cidade / País" : "Ciudad / País"}
-                    </label>
-                    <input
-                      type="text"
-                      value={guestbookCity}
-                      onChange={(e) => setGuestbookCity(e.target.value)}
-                      placeholder={language === "en" ? "Madrid, Spain..." : language === "pt" ? "São Paulo, Brasil..." : "Mendoza, Argentina..."}
-                      className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all"
-                    />
-                  </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
+                    {language === "en" ? "Name" : language === "pt" ? "Nome" : "Nombre"} <span className="text-amber-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={guestbookName}
+                    onChange={(e) => setGuestbookName(e.target.value)}
+                    placeholder={language === "en" ? "Your name..." : language === "pt" ? "Seu nome..." : "Tu nombre..."}
+                    className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all w-full"
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
-                    {language === "en" ? "Your Reflection / Message" : language === "pt" ? "Sua Reflexão / Mensagem" : "Tu Mensaje o Reflexión"} <span className="text-amber-500">*</span>
+                    {language === "en" ? "Your Message" : language === "pt" ? "Sua Mensagem" : "Tu Mensaje"} <span className="text-amber-500">*</span>
                   </label>
                   <textarea
                     required
                     rows={3}
                     value={guestbookMessage}
                     onChange={(e) => setGuestbookMessage(e.target.value)}
-                    placeholder={language === "en" ? "Write your meditative thoughts here..." : language === "pt" ? "Escreva seus pensamentos meditativos aqui..." : "Escribe tus pensamientos o agradecimientos aquí..."}
+                    placeholder={language === "en" ? "Write your message or comment here..." : language === "pt" ? "Escreva sua mensagem ou comentário aqui..." : "Escribe tu mensaje o comentario aquí..."}
                     className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all resize-none"
                   />
                 </div>
@@ -3622,7 +3614,7 @@ export default function App() {
                           ? "Message sent successfully to the universe and template creator! Thank you."
                           : language === "pt"
                           ? "Mensagem enviada com sucesso para o universo e criador do site! Obrigado."
-                          : "¡Mensaje enviado con éxito al universo y al creador del sitio! Gracias por tu reflexión."}
+                          : "¡Mensaje enviado con éxito al universo y al creador del sitio! Gracias por tu mensaje."}
                       </span>
                     </motion.div>
                   )}
@@ -3631,11 +3623,6 @@ export default function App() {
 
               {/* Comments List */}
               <div className="flex flex-col gap-4 mt-2">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center justify-between border-b border-slate-900 pb-2">
-                  <span>✨ {language === "en" ? "Global Souls Guestbook" : language === "pt" ? "Mensagens das Almas Globais" : "Reflexiones de Almas Globales"}</span>
-                  <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-full font-mono text-amber-400">{guestbookMessages.length}</span>
-                </h4>
-
                 <div className="grid grid-cols-1 gap-3.5 max-h-[450px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-850">
                   {guestbookMessages.map((msg: any) => (
                     <motion.div
@@ -4953,7 +4940,7 @@ export default function App() {
           <div className="relative shrink-0 mt-2 sm:mt-0" ref={coffeeRef}>
             <button
               onClick={() => setShowCoffeeOptions(!showCoffeeOptions)}
-              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-500/70 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95 transition-all duration-300 select-none cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-emerald-400 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-500/70 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95 transition-all duration-300 select-none cursor-pointer"
               title={language === "en" ? "Buy me a coffee 🤭" : language === "pt" ? "Me pagar um cafezinho 🤭" : "Invítame un cafecito 🤭"}
             >
               <span className="flex items-center gap-1.5">
