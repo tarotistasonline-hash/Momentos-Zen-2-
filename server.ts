@@ -18,18 +18,193 @@ const __dirname = (() => {
 const app = express();
 app.use(express.json());
 
+// === NATIVE OBSERVABILITY & TELEMETRY SYSTEMS ===
+interface APIMetric {
+  count: number;
+  totalDuration: number;
+  minDuration: number;
+  maxDuration: number;
+  errors: number;
+}
+
+const apiMetrics = new Map<string, APIMetric>();
+
+interface LiveLog {
+  timestamp: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  duration: number;
+  error?: string;
+  info?: string;
+}
+
+const liveLogs: LiveLog[] = [];
+const MAX_LIVE_LOGS = 40;
+
+const customEvents = {
+  tarotReadings: 0,
+  runesCasts: 0,
+  angelReadings: 0,
+  numerologyProfiles: 0,
+  treeOfLifeAlignments: 0,
+  astrologyChecks: 0,
+  audioSessions: 0,
+  zenAdviceRequests: 0,
+  errorsLogged: 0,
+};
+
+// Auto-instrumentation Request Interceptor middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  const method = req.method;
+
+  // Intercept completion
+  const originalEnd = res.end;
+  res.end = function (chunk?: any, encoding?: any, cb?: any) {
+    const duration = Date.now() - start;
+    const statusCode = res.statusCode;
+
+    // We only track /api endpoints and ignore static assets
+    if (path.startsWith("/api") && path !== "/api/observability/stats") {
+      let metric = apiMetrics.get(path);
+      if (!metric) {
+        metric = { count: 0, totalDuration: 0, minDuration: 999999, maxDuration: 0, errors: 0 };
+        apiMetrics.set(path, metric);
+      }
+      metric.count += 1;
+      metric.totalDuration += duration;
+      if (duration < metric.minDuration) metric.minDuration = duration;
+      if (duration > metric.maxDuration) metric.maxDuration = duration;
+      
+      if (statusCode >= 400) {
+        metric.errors += 1;
+        if (statusCode >= 500) {
+          customEvents.errorsLogged += 1;
+        }
+      }
+
+      // Feature usage event mapping
+      if (statusCode < 400) {
+        if (path === "/api/tarot") customEvents.tarotReadings += 1;
+        else if (path === "/api/runes") customEvents.runesCasts += 1;
+        else if (path === "/api/angels") customEvents.angelReadings += 1;
+        else if (path === "/api/numerology") customEvents.numerologyProfiles += 1;
+        else if (path === "/api/tree-of-life") customEvents.treeOfLifeAlignments += 1;
+        else if (path === "/api/astrology") customEvents.astrologyChecks += 1;
+        else if (path === "/api/zen-advice") customEvents.zenAdviceRequests += 1;
+      }
+
+      // Create a live log entry
+      let info = "";
+      if (req.body && typeof req.body === "object") {
+        if (req.body.question) info = `Q: "${req.body.question}"`;
+        else if (req.body.fullName) info = `Name: ${req.body.fullName}`;
+        else if (req.body.mood) info = `Mood: ${req.body.mood}`;
+      }
+
+      const newLog: LiveLog = {
+        timestamp: new Date().toLocaleTimeString(),
+        method,
+        path,
+        statusCode,
+        duration,
+        info: info || undefined,
+      };
+
+      liveLogs.unshift(newLog);
+      if (liveLogs.length > MAX_LIVE_LOGS) {
+        liveLogs.pop();
+      }
+    }
+
+    return originalEnd.apply(this, arguments as any);
+  };
+
+  next();
+});
+
+// Client-side instrumentation and event reporter endpoint
+app.post("/api/observability/report", (req, res) => {
+  const { type, name, message, duration, info } = req.body;
+
+  if (type === "error") {
+    customEvents.errorsLogged += 1;
+    const newLog: LiveLog = {
+      timestamp: new Date().toLocaleTimeString(),
+      method: "CLIENT_ERROR",
+      path: `Uncaught: ${name || "Exception"}`,
+      statusCode: 500,
+      duration: duration || 0,
+      error: message,
+      info: info || undefined,
+    };
+    liveLogs.unshift(newLog);
+  } else if (type === "event") {
+    if (name === "audio_start") {
+      customEvents.audioSessions += 1;
+    }
+    const newLog: LiveLog = {
+      timestamp: new Date().toLocaleTimeString(),
+      method: "CLIENT_EVENT",
+      path: `Action: ${name}`,
+      statusCode: 200,
+      duration: duration || 0,
+      info: info || undefined,
+    };
+    liveLogs.unshift(newLog);
+  }
+
+  if (liveLogs.length > MAX_LIVE_LOGS) {
+    liveLogs.pop();
+  }
+
+  res.json({ success: true });
+});
+
+// Real-time telemetry payload provider for client dashboards
+app.get("/api/observability/stats", (req, res) => {
+  const metricsList = Array.from(apiMetrics.entries()).map(([path, data]) => ({
+    path,
+    count: data.count,
+    avgDuration: Math.round(data.totalDuration / data.count),
+    minDuration: data.minDuration === 999999 ? 0 : data.minDuration,
+    maxDuration: data.maxDuration,
+    errors: data.errors,
+  }));
+
+  res.json({
+    metrics: metricsList,
+    events: customEvents,
+    logs: liveLogs,
+    isSentryConfigured: !!process.env.SENTRY_DSN,
+    isMixpanelConfigured: !!process.env.MIXPANEL_TOKEN,
+  });
+});
+// =============================================
+
 const PORT = 3000;
 
-// Initialize Gemini Client
-const apiKey = process.env.GEMINI_API_KEY || "";
-const ai = new GoogleGenAI({
-  apiKey: apiKey,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
+// Initialize Gemini Client Lazily
+let aiInstance: GoogleGenAI | null = null;
+function getAiClient(): GoogleGenAI {
+  if (!aiInstance) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      throw new Error("GEMINI_API_KEY environment variable is required.");
+    }
+    aiInstance = new GoogleGenAI({
+      apiKey: key,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  }
+  return aiInstance;
+}
 
 // Variables to manage Gemini API availability state (Circuit Breaker)
 let geminiDisabledUntil = 0;
@@ -50,7 +225,8 @@ async function generateContentWithRetry(params: {
   contents: any;
   config?: any;
 }) {
-  if (!apiKey) {
+  const key = process.env.GEMINI_API_KEY || "";
+  if (!key) {
     throw new Error("GEMINI_API_KEY is not set.");
   }
 
@@ -73,6 +249,7 @@ async function generateContentWithRetry(params: {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         console.log(`[Gemini API] Attempting generateContent with model: ${modelName}, attempt: ${attempt + 1}`);
+        const ai = getAiClient();
         const response = await ai.models.generateContent({
           model: modelName,
           contents: params.contents,

@@ -30,11 +30,13 @@ import {
   HelpCircle,
   Image,
   Download,
+  Coffee,
 } from "lucide-react";
 import { DICTIONARY, MINDFULNESS_ARTICLES_LOCALIZED, VOICE_SCRIPTS } from "./dictionary";
 import { MEDITATION_PACKS, PACK_LABELS } from "./meditationPacks";
 import { TwinkleText } from "./components/TwinkleText";
 import { AstrologyTab } from "./components/AstrologyTab";
+import { MetricsTab } from "./components/MetricsTab";
 import { ZenVisualizer } from "./components/ZenVisualizer";
 import { exportReadingAsImage } from "./utils/exportImage";
 // @ts-ignore
@@ -222,6 +224,54 @@ export default function App() {
   useEffect(() => {
     safeLocalStorage.setItem("zen_formspree_id", guestbookFormspreeId);
   }, [guestbookFormspreeId]);
+
+  // Client-side Global Observability & Error Reporting Hook
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      fetch("/api/observability/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "error",
+          name: event.error?.name || "UncaughtError",
+          message: event.message || event.error?.message || "Unknown client error",
+          info: `Agent: ${navigator.userAgent}`
+        })
+      }).catch(() => {});
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      fetch("/api/observability/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "error",
+          name: "UnhandledRejection",
+          message: String(event.reason?.message || event.reason),
+          info: `Agent: ${navigator.userAgent}`
+        })
+      }).catch(() => {});
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    // Track application session start
+    fetch("/api/observability/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "event",
+        name: "session_start",
+        info: `Lang: ${language}`
+      })
+    }).catch(() => {});
+
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+    };
+  }, [language]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -2301,6 +2351,19 @@ export default function App() {
               <TwinkleText
                 text={dict.tabArticles}
                 glowColor={activeTab === "biblioteca" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
+              />
+            </button>
+            <button
+              onClick={() => { setActiveTab("metrics"); setExpandedArticle(null); }}
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+                activeTab === "metrics"
+                  ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
+                  : "border border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <TwinkleText
+                text={language === "en" ? "Metrics" : language === "de" ? "Metriken" : language === "pt" ? "Métricas" : "Métricas"}
+                glowColor={activeTab === "metrics" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
               />
             </button>
         </nav>
@@ -4550,6 +4613,11 @@ export default function App() {
           <AstrologyTab language={language} />
         )}
 
+        {/* TAB: TELEMETRY & METRICS DASHBOARD */}
+        {activeTab === "metrics" && (
+          <MetricsTab language={language} />
+        )}
+
         {/* TAB 7: ORACLE OF THE ANGELS OF LIGHT & INTEGRATED PROGRESS/STATS */}
         {activeTab === "angels" && (
           <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
@@ -4877,18 +4945,21 @@ export default function App() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-3 bg-slate-900/40 px-6 py-4 rounded-3xl border border-amber-500/20 hover:border-amber-500/40 max-w-md sm:max-w-xl md:max-w-2xl shadow-xl transition-all duration-300">
           <span className="bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-100 bg-clip-text text-transparent text-sm sm:text-base md:text-lg font-extrabold leading-relaxed animate-pulse drop-shadow-[0_1px_8px_rgba(245,158,11,0.45)] tracking-wide text-center sm:text-left">
             {language === "en"
-              ? "If you enjoyed this moment of relaxation, buy me a coffee"
+              ? "If you enjoyed this moment of relaxation 🤭"
               : language === "pt"
-              ? "Se você gostou deste momento de relaxamento, me pague um cafezinho"
-              : "si disfrutaste de este momento de relax, invítame con un cafecito"}
+              ? "Se você gostou deste momento de relaxamento 🤭"
+              : "Si disfrutaste de este momento de relax 🤭"}
           </span>
           <div className="relative shrink-0 mt-2 sm:mt-0" ref={coffeeRef}>
             <button
               onClick={() => setShowCoffeeOptions(!showCoffeeOptions)}
               className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-500/70 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95 transition-all duration-300 select-none cursor-pointer"
-              title={language === "en" ? "Buy me a coffee" : language === "pt" ? "Me pagar um cafezinho" : "Invítame un cafecito"}
+              title={language === "en" ? "Buy me a coffee 🤭" : language === "pt" ? "Me pagar um cafezinho 🤭" : "Invítame un cafecito 🤭"}
             >
-              <span>☕ {language === "en" ? "Cafecito" : language === "pt" ? "Cafezinho" : "Cafecito"}</span>
+              <span className="flex items-center gap-1.5">
+                <Coffee className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
+                <span>{language === "en" ? "Buy me a coffee 🤭" : language === "pt" ? "Me pagar um cafezinho 🤭" : "Invítame un cafecito 🤭"}</span>
+              </span>
               <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform duration-300 ${showCoffeeOptions ? 'rotate-180' : ''}`} />
             </button>
 
