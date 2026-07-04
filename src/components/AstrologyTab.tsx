@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { safeLocalStorage } from "../utils/safeStorage";
 import {
   Sparkles,
   Calendar,
@@ -127,7 +128,7 @@ export function AstrologyTab({ language }: AstrologyTabProps) {
 
   // Zodiac Profile State
   const [birthDate, setBirthDate] = useState<string>(() => {
-    return localStorage.getItem("user_birthdate") || "";
+    return safeLocalStorage.getItem("user_birthdate") || "";
   });
   const [zodiacData, setZodiacData] = useState<any>(null);
   const [loadingZodiac, setLoadingZodiac] = useState<boolean>(false);
@@ -160,7 +161,7 @@ export function AstrologyTab({ language }: AstrologyTabProps) {
     if (!dateVal) return;
     setLoadingZodiac(true);
     setZodiacError(null);
-    localStorage.setItem("user_birthdate", dateVal);
+    safeLocalStorage.setItem("user_birthdate", dateVal);
 
     try {
       const res = await fetch("/api/zodiac-profile", {

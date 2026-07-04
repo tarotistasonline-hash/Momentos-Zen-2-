@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { safeLocalStorage } from "./utils/safeStorage";
 import {
   Compass,
   Heart,
@@ -9,6 +10,7 @@ import {
   User,
   Calendar,
   ChevronRight,
+  ChevronDown,
   Volume2,
   VolumeX,
   Wind,
@@ -53,7 +55,7 @@ function MovingDigit() {
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
   const [language, setLanguage] = useState<"es" | "en" | "pt">(() => {
-    const saved = localStorage.getItem("zen_language");
+    const saved = safeLocalStorage.getItem("zen_language");
     return (saved as "es" | "en" | "pt") || "es";
   });
   
@@ -64,7 +66,7 @@ export default function App() {
   const [activeSentenceIndex, setActiveSentenceIndex] = useState<number>(-1);
   const [systemVoices, setSystemVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>(() => {
-    return localStorage.getItem("zen_voice_uri") || "";
+    return safeLocalStorage.getItem("zen_voice_uri") || "";
   });
 
   const [mood, setMood] = useState<string>("calmado");
@@ -156,6 +158,136 @@ export default function App() {
   // Visitor counter state
   const [visitorCount, setVisitorCount] = useState<number>(12847);
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
+  const [showCoffeeOptions, setShowCoffeeOptions] = useState<boolean>(false);
+  const coffeeRef = useRef<HTMLDivElement>(null);
+
+  // Guestbook (Libro de Visitas) States
+  const [guestbookMessages, setGuestbookMessages] = useState<any[]>(() => {
+    const saved = safeLocalStorage.getItem("zen_guestbook_messages");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [
+      {
+        id: "m1",
+        name: "Sofía",
+        city: "Buenos Aires, Argentina",
+        message: "Este espacio ha sido mi faro de luz hoy. La meditación para disolver preocupaciones me devolvió el centro. ¡Gracias por crear esta maravilla! 🧘✨",
+        date: "2026-07-02T10:15:00.000Z",
+        avatar: "🧘",
+        color: "from-emerald-500 to-teal-600"
+      },
+      {
+        id: "m2",
+        name: "Alejandro",
+        city: "Madrid, España",
+        message: "Las lecturas de runas combinadas con la música ambiental son mágicas. Un antes y un después en mi rutina de paz diaria. 🌊🔮",
+        date: "2026-07-03T18:45:00.000Z",
+        avatar: "🔮",
+        color: "from-amber-500 to-orange-600"
+      },
+      {
+        id: "m3",
+        name: "Mariana",
+        city: "Santiago, Chile",
+        message: "¡La voz de meditación guiada es hermosa! Realmente me ayuda a dormir profundamente. El detalle del cafecito es precioso, ya te invité uno. ☕❤️",
+        date: "2026-07-04T02:30:00.000Z",
+        avatar: "☕",
+        color: "from-rose-500 to-pink-600"
+      }
+    ];
+  });
+  const [guestbookName, setGuestbookName] = useState<string>("");
+  const [guestbookCity, setGuestbookCity] = useState<string>("");
+  const [guestbookMessage, setGuestbookMessage] = useState<string>("");
+  const [guestbookFormspreeId, setGuestbookFormspreeId] = useState<string>(() => {
+    return safeLocalStorage.getItem("zen_formspree_id") || "xldebdzk";
+  });
+  const [isSubmittingGuestbook, setIsSubmittingGuestbook] = useState<boolean>(false);
+  const [guestbookSuccess, setGuestbookSuccess] = useState<boolean>(false);
+  const [showFormspreeConfig, setShowFormspreeConfig] = useState<boolean>(false);
+
+  useEffect(() => {
+    safeLocalStorage.setItem("zen_formspree_id", guestbookFormspreeId);
+  }, [guestbookFormspreeId]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (coffeeRef.current && !coffeeRef.current.contains(event.target as Node)) {
+        setShowCoffeeOptions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleGuestbookSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestbookName.trim() || !guestbookMessage.trim()) return;
+
+    setIsSubmittingGuestbook(true);
+    setGuestbookSuccess(false);
+
+    const avatars = ["🧘", "🔮", "✨", "🌸", "🌊", "🍃", "🕊️", "☀️", "🌙", "🕯️", "☕", "☯️"];
+    const colors = [
+      "from-emerald-500 to-teal-600",
+      "from-amber-500 to-orange-600",
+      "from-rose-500 to-pink-600",
+      "from-indigo-500 to-purple-600",
+      "from-cyan-500 to-blue-600",
+      "from-teal-500 to-emerald-600"
+    ];
+    const randomAvatar = avatars[Math.floor(Math.random() * avatars.length)];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+    const newMessage = {
+      id: "user-" + Date.now(),
+      name: guestbookName,
+      city: guestbookCity || (language === "en" ? "Earth Temple" : language === "pt" ? "Templo da Terra" : "Templo de la Tierra"),
+      message: guestbookMessage,
+      date: new Date().toISOString(),
+      avatar: randomAvatar,
+      color: randomColor
+    };
+
+    try {
+      await fetch(`https://formspree.io/f/${guestbookFormspreeId}`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: guestbookName,
+          city: guestbookCity,
+          message: guestbookMessage,
+          date: newMessage.date
+        })
+      });
+    } catch (err) {
+      console.error("Formspree submit error:", err);
+    }
+
+    const updatedMessages = [newMessage, ...guestbookMessages];
+    setGuestbookMessages(updatedMessages);
+    safeLocalStorage.setItem("zen_guestbook_messages", JSON.stringify(updatedMessages));
+
+    setGuestbookName("");
+    setGuestbookCity("");
+    setGuestbookMessage("");
+    setGuestbookSuccess(true);
+    setIsSubmittingGuestbook(false);
+
+    setTimeout(() => {
+      setGuestbookSuccess(false);
+    }, 5000);
+  };
 
   // Interactive Breathing Guide State
   const [breathingState, setBreathingState] = useState<"idle" | "inhale" | "hold1" | "exhale" | "hold2">("idle");
@@ -222,10 +354,10 @@ export default function App() {
     fetchLunarGuidance(todayStr, localPhase);
 
     // Initial values from localStorage
-    const savedStreak = localStorage.getItem("zen_streak");
-    const savedMinutes = localStorage.getItem("zen_minutes");
-    const savedActions = localStorage.getItem("zen_actions");
-    const savedHistory = localStorage.getItem("zen_history");
+    const savedStreak = safeLocalStorage.getItem("zen_streak");
+    const savedMinutes = safeLocalStorage.getItem("zen_minutes");
+    const savedActions = safeLocalStorage.getItem("zen_actions");
+    const savedHistory = safeLocalStorage.getItem("zen_history");
 
     if (savedStreak) setStreak(parseInt(savedStreak));
     if (savedMinutes) setMinutesMeditated(parseInt(savedMinutes));
@@ -245,7 +377,7 @@ export default function App() {
 
   // Save language preference to localStorage
   useEffect(() => {
-    localStorage.setItem("zen_language", language);
+    safeLocalStorage.setItem("zen_language", language);
     if (activeTab === "astrology") {
       fetchAstrology(true);
     }
@@ -274,7 +406,7 @@ export default function App() {
       const voices = window.speechSynthesis.getVoices();
       setSystemVoices(voices);
       
-      const savedVoiceURI = localStorage.getItem("zen_voice_uri");
+      const savedVoiceURI = safeLocalStorage.getItem("zen_voice_uri");
       if (savedVoiceURI && voices.some(v => v.voiceURI === savedVoiceURI)) {
         setSelectedVoiceURI(savedVoiceURI);
       } else {
@@ -301,7 +433,7 @@ export default function App() {
         
         if (defaultVoice) {
           setSelectedVoiceURI(defaultVoice.voiceURI);
-          localStorage.setItem("zen_voice_uri", defaultVoice.voiceURI);
+          safeLocalStorage.setItem("zen_voice_uri", defaultVoice.voiceURI);
         }
       }
     };
@@ -661,7 +793,7 @@ export default function App() {
     };
     const updated = [newRecord, ...readingsHistory].slice(0, 15); // keep last 15
     setReadingsHistory(updated);
-    localStorage.setItem("zen_history", JSON.stringify(updated));
+    safeLocalStorage.setItem("zen_history", JSON.stringify(updated));
   };
 
   // 12. Checklist Toggle
@@ -671,13 +803,13 @@ export default function App() {
       [actionKey]: !completedActions[actionKey]
     };
     setCompletedActions(updated);
-    localStorage.setItem("zen_actions", JSON.stringify(updated));
+    safeLocalStorage.setItem("zen_actions", JSON.stringify(updated));
 
     // Increase score marginally or update streak if first check
     const countCompleted = Object.values(updated).filter(Boolean).length;
     if (countCompleted === 1 && streak === 0) {
       setStreak(1);
-      localStorage.setItem("zen_streak", "1");
+      safeLocalStorage.setItem("zen_streak", "1");
     }
   };
 
@@ -716,10 +848,10 @@ export default function App() {
             setBreathingState("idle");
             const newMinutes = minutesMeditated + breathingSessionLength;
             setMinutesMeditated(newMinutes);
-            localStorage.setItem("zen_minutes", String(newMinutes));
+            safeLocalStorage.setItem("zen_minutes", String(newMinutes));
             setStreak((prev) => {
               const newStreak = prev + 1;
-              localStorage.setItem("zen_streak", String(newStreak));
+              safeLocalStorage.setItem("zen_streak", String(newStreak));
               return newStreak;
             });
             triggerCustomNotification("¡Felicidades! Completaste tu sesión de Respiración Consciente.");
@@ -1797,7 +1929,7 @@ export default function App() {
   };
 
   const handleFullReset = () => {
-    localStorage.clear();
+    safeLocalStorage.clear();
     window.location.reload();
   };
 
@@ -2139,17 +2271,20 @@ export default function App() {
                 { name: "🧘 Daily Guide", id: "guia-diaria" },
                 { name: "🎵 Music & Sounds", id: "mezclador-sonidos" },
                 { name: "🗣️ Voice Guided", id: "meditacion-guiada-voz" },
-                { name: "🌸 Thematic Packs", id: "colecciones-tematicas-meditacion" }
+                { name: "🌸 Thematic Packs", id: "colecciones-tematicas-meditacion" },
+                { name: "✍️ Guestbook", id: "libro-visitas" }
               ] : language === "pt" ? [
                 { name: "🧘 Guia Diário", id: "guia-diaria" },
                 { name: "🎵 Música e Sons", id: "mezclador-sonidos" },
                 { name: "🗣️ Guiada por Voz", id: "meditacion-guiada-voz" },
-                { name: "🌸 Coleções Temáticas", id: "colecciones-tematicas-meditacion" }
+                { name: "🌸 Coleções Temáticas", id: "colecciones-tematicas-meditacion" },
+                { name: "✍️ Livro de Visitas", id: "libro-visitas" }
               ] : [
                 { name: "🧘 Guía Diaria", id: "guia-diaria" },
                 { name: "🎵 Música y Sonidos", id: "mezclador-sonidos" },
                 { name: "🗣️ Guiada por Voz", id: "meditacion-guiada-voz" },
-                { name: "🌸 Colecciones Temáticas", id: "colecciones-tematicas-meditacion" }
+                { name: "🌸 Colecciones Temáticas", id: "colecciones-tematicas-meditacion" },
+                { name: "✍️ Libro de Visitas", id: "libro-visitas" }
               ])).map((item) => (
                 <button
                   key={item.id}
@@ -2489,7 +2624,7 @@ export default function App() {
                               onChange={(e) => {
                                 const newUri = e.target.value;
                                 setSelectedVoiceURI(newUri);
-                                localStorage.setItem("zen_voice_uri", newUri);
+                                safeLocalStorage.setItem("zen_voice_uri", newUri);
                                 
                                 // Play a short preview
                                 try {
@@ -3185,6 +3320,213 @@ export default function App() {
                   </div>
                 );
               })()}
+            </div>
+
+            {/* ✍️ Guestbook (Libro de Visitas) Section */}
+            <div id="libro-visitas" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 scroll-mt-24 mt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <Feather className="w-5 h-5 text-amber-400" />
+                    {language === "en" ? "Zen Guestbook" : language === "pt" ? "Livro de Visitas Zen" : "Libro de Visitas Zen"}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {language === "en" 
+                      ? "Share your peace, reflections, and experiences with other souls." 
+                      : language === "pt"
+                      ? "Compartilhe sua paz, reflexões e experiências com outras almas."
+                      : "Comparte tu paz, reflexiones y experiencias con otras almas."}
+                  </p>
+                </div>
+                
+                {/* Admin configuration button */}
+                <button
+                  type="button"
+                  onClick={() => setShowFormspreeConfig(!showFormspreeConfig)}
+                  className="px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 transition-all font-semibold flex items-center gap-1 self-start sm:self-center cursor-pointer active:scale-95"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  {language === "en" ? "Config Formspree" : language === "pt" ? "Configurar Formspree" : "Configurar Formspree"}
+                </button>
+              </div>
+
+              {/* Formspree Config Panel */}
+              <AnimatePresence>
+                {showFormspreeConfig && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden bg-slate-950/45 border border-slate-900 rounded-2xl p-4 flex flex-col gap-3"
+                  >
+                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                      {language === "en" ? "Owner Administration" : "Administración del Creador"}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      {language === "en"
+                        ? "To receive guestbook messages directly in your email inbox, create a free form at Formspree.io, and enter your Form ID below:"
+                        : language === "pt"
+                        ? "Para receber mensagens do livro de visitas diretamente em seu e-mail, crie um formulário gratuito no Formspree.io e digite o ID do formulário abaixo:"
+                        : "Para recibir los mensajes del libro de visitas directamente en tu correo electrónico, crea un formulario gratis en Formspree.io e ingresa el ID de tu formulario a continuación:"}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                      <input
+                        type="text"
+                        value={guestbookFormspreeId}
+                        onChange={(e) => setGuestbookFormspreeId(e.target.value)}
+                        placeholder="Ej: xldebdzk"
+                        className="bg-slate-900 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 flex-1 font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowFormspreeConfig(false)}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all cursor-pointer"
+                      >
+                        {language === "en" ? "Save ID" : "Guardar ID"}
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                      <span>💡</span>
+                      <span>
+                        {language === "en"
+                          ? "Current endpoint: https://formspree.io/f/" + guestbookFormspreeId
+                          : "Enlace de envío actual: https://formspree.io/f/" + guestbookFormspreeId}
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Guestbook Form */}
+              <form onSubmit={handleGuestbookSubmit} className="bg-slate-950/20 border border-slate-900 rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
+                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>✍️</span>
+                  {language === "en" ? "Leave a Message" : language === "pt" ? "Deixe uma Mensagem" : "Dejar un Mensaje"}
+                </h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
+                      {language === "en" ? "Name" : language === "pt" ? "Nome" : "Nombre"} <span className="text-amber-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={guestbookName}
+                      onChange={(e) => setGuestbookName(e.target.value)}
+                      placeholder={language === "en" ? "Your name..." : language === "pt" ? "Seu nome..." : "Tu nombre..."}
+                      className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
+                      {language === "en" ? "City / Country" : language === "pt" ? "Cidade / País" : "Ciudad / País"}
+                    </label>
+                    <input
+                      type="text"
+                      value={guestbookCity}
+                      onChange={(e) => setGuestbookCity(e.target.value)}
+                      placeholder={language === "en" ? "Madrid, Spain..." : language === "pt" ? "São Paulo, Brasil..." : "Mendoza, Argentina..."}
+                      className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
+                    {language === "en" ? "Your Reflection / Message" : language === "pt" ? "Sua Reflexão / Mensagem" : "Tu Mensaje o Reflexión"} <span className="text-amber-500">*</span>
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={guestbookMessage}
+                    onChange={(e) => setGuestbookMessage(e.target.value)}
+                    placeholder={language === "en" ? "Write your meditative thoughts here..." : language === "pt" ? "Escreva seus pensamentos meditativos aqui..." : "Escribe tus pensamientos o agradecimientos aquí..."}
+                    className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all resize-none"
+                  />
+                </div>
+
+                {/* Submit button and notification success banner */}
+                <div className="flex flex-col gap-3">
+                  <button
+                    type="submit"
+                    disabled={isSubmittingGuestbook}
+                    className="w-full sm:w-auto self-end bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 disabled:from-slate-800 disabled:to-slate-850 disabled:text-slate-600 text-slate-950 font-extrabold text-xs sm:text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-950/40 active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-t border-emerald-300/35 animate-pulse hover:animate-none"
+                  >
+                    {isSubmittingGuestbook ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        {language === "en" ? "Sending to the universe..." : language === "pt" ? "Enviando ao universo..." : "Enviando al universo..."}
+                      </>
+                    ) : (
+                      <>
+                        <span>🕊️</span>
+                        {language === "en" ? "Leave Comment" : language === "pt" ? "Deixar Comentário" : "Dejar Comentario"}
+                      </>
+                    )}
+                  </button>
+
+                  {guestbookSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-pulse"
+                    >
+                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>
+                        {language === "en"
+                          ? "Message sent successfully to the universe and template creator! Thank you."
+                          : language === "pt"
+                          ? "Mensagem enviada com sucesso para o universo e criador do site! Obrigado."
+                          : "¡Mensaje enviado con éxito al universo y al creador del sitio! Gracias por tu reflexión."}
+                      </span>
+                    </motion.div>
+                  )}
+                </div>
+              </form>
+
+              {/* Comments List */}
+              <div className="flex flex-col gap-4 mt-2">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center justify-between border-b border-slate-900 pb-2">
+                  <span>✨ {language === "en" ? "Global Souls Guestbook" : language === "pt" ? "Mensagens das Almas Globais" : "Reflexiones de Almas Globales"}</span>
+                  <span className="text-[10px] bg-slate-950 px-2 py-0.5 rounded-full font-mono text-amber-400">{guestbookMessages.length}</span>
+                </h4>
+
+                <div className="grid grid-cols-1 gap-3.5 max-h-[450px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-850">
+                  {guestbookMessages.map((msg: any) => (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-slate-950/35 border border-slate-900/60 p-4 rounded-2xl flex gap-3.5 relative overflow-hidden group hover:border-slate-800/80 transition-all duration-300"
+                    >
+                      {/* Avatar / Icon */}
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${msg.color || 'from-emerald-500 to-teal-600'} flex items-center justify-center text-lg shadow-inner select-none shrink-0`}>
+                        {msg.avatar || "🧘"}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-serif text-sm font-bold text-slate-200">{msg.name}</span>
+                            <span className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
+                              📍 {msg.city}
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-slate-600 font-mono">
+                            {new Date(msg.date).toLocaleDateString(language, { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                        <p className="text-xs sm:text-[13px] text-slate-300 font-medium leading-relaxed font-serif break-words">
+                          "{msg.message}"
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -4246,23 +4588,62 @@ export default function App() {
         <p className="text-slate-600 mt-1">Conectando la sabiduría ancestral y la inteligencia artificial para guiar tu paz interior.</p>
         
         {/* Cafecito / Gratitude Section */}
-        <div className="flex items-center justify-center gap-2 mt-2 bg-slate-900/30 px-5 py-2.5 rounded-2xl border border-slate-900/60 max-w-sm sm:max-w-md shadow-md">
-          <span className="bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-200 bg-clip-text text-transparent text-[11px] sm:text-xs font-bold leading-relaxed animate-pulse drop-shadow-[0_1px_5px_rgba(245,158,11,0.3)] tracking-wide">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-3 bg-slate-900/40 px-6 py-4 rounded-3xl border border-amber-500/20 hover:border-amber-500/40 max-w-md sm:max-w-xl md:max-w-2xl shadow-xl transition-all duration-300">
+          <span className="bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-100 bg-clip-text text-transparent text-sm sm:text-base md:text-lg font-extrabold leading-relaxed animate-pulse drop-shadow-[0_1px_8px_rgba(245,158,11,0.45)] tracking-wide text-center sm:text-left">
             {language === "en"
               ? "If you enjoyed this moment of relaxation, buy me a coffee"
               : language === "pt"
               ? "Se você gostou deste momento de relaxamento, me pague um cafezinho"
               : "si disfrutaste de este momento de relax, invítame con un cafecito"}
           </span>
-          <a
-            href="https://mpago.la/1LHyBwV"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center text-lg hover:scale-130 hover:rotate-12 active:scale-95 transition-all duration-300 w-8 h-8 bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 hover:border-amber-500/70 rounded-full shadow-[0_0_12px_rgba(245,158,11,0.25)] select-none cursor-pointer"
-            title={language === "en" ? "Buy me a coffee" : "Invítame con un cafecito"}
-          >
-            🤭
-          </a>
+          <div className="relative shrink-0 mt-2 sm:mt-0" ref={coffeeRef}>
+            <button
+              onClick={() => setShowCoffeeOptions(!showCoffeeOptions)}
+              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-amber-300 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-500/70 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95 transition-all duration-300 select-none cursor-pointer"
+              title={language === "en" ? "Buy me a coffee" : language === "pt" ? "Me pagar um cafezinho" : "Invítame un cafecito"}
+            >
+              <span>☕ {language === "en" ? "Cafecito" : language === "pt" ? "Cafezinho" : "Cafecito"}</span>
+              <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform duration-300 ${showCoffeeOptions ? 'rotate-180' : ''}`} />
+            </button>
+
+            <div
+              className={`absolute bottom-full right-1/2 translate-x-1/2 sm:right-0 sm:translate-x-0 mb-3 bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 flex flex-col gap-2 shadow-2xl z-50 min-w-[210px] border-amber-500/30 transition-all duration-300 origin-bottom ${
+                showCoffeeOptions
+                  ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                  : "opacity-0 translate-y-2 scale-95 pointer-events-none"
+              }`}
+            >
+              <div className="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wider border-b border-slate-900 pb-2 mb-1">
+                {language === "en" ? "Support the project" : language === "pt" ? "Apoiar o projeto" : "Apoyar al proyecto"}
+              </div>
+              
+              {/* Mercado Pago */}
+              <a
+                href="https://mpago.la/1LHyBwV"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowCoffeeOptions(false)}
+                className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/10 hover:border-amber-500/40 rounded-xl transition-all duration-300 cursor-pointer select-none"
+                title={language === "en" ? "Mercado Pago (Argentina)" : "Mercado Pago (Argentina)"}
+              >
+                <span className="text-sm">🇦🇷</span>
+                <span>Mercado Pago</span>
+              </a>
+
+              {/* PayPal */}
+              <a
+                href="https://paypal.me/margsaft?locale.x=es_XC&country.x=AR"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowCoffeeOptions(false)}
+                className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-sky-300 hover:text-white hover:bg-sky-500/10 border border-sky-500/10 hover:border-sky-500/40 rounded-xl transition-all duration-300 cursor-pointer select-none"
+                title={language === "en" ? "PayPal (International)" : "PayPal (Internacional)"}
+              >
+                <span className="text-sm">🌎</span>
+                <span>PayPal</span>
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Visitors badge twinkling below */}
