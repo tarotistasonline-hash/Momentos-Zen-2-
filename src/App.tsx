@@ -38,6 +38,8 @@ import { TwinkleText } from "./components/TwinkleText";
 import { AstrologyTab } from "./components/AstrologyTab";
 import { MetricsTab } from "./components/MetricsTab";
 import { ZenVisualizer } from "./components/ZenVisualizer";
+import { BoxBreathingGuide } from "./components/BoxBreathingGuide";
+import { KabbalahGuide } from "./components/KabbalahGuide";
 import { exportReadingAsImage } from "./utils/exportImage";
 // @ts-ignore
 import kabbalahTreeOfLifeImg from "./assets/images/kabbalah_tree_of_life_1782922797280.jpg";
@@ -172,6 +174,8 @@ export default function App() {
   const [showResetModal, setShowResetModal] = useState<boolean>(false);
   const [showCoffeeOptions, setShowCoffeeOptions] = useState<boolean>(false);
   const coffeeRef = useRef<HTMLDivElement>(null);
+  const [langDropdownOpen, setLangDropdownOpen] = useState<boolean>(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
 
   // Guestbook (Libro de Visitas) States
   const [guestbookMessages, setGuestbookMessages] = useState<any[]>(() => {
@@ -279,6 +283,9 @@ export default function App() {
     function handleClickOutside(event: MouseEvent) {
       if (coffeeRef.current && !coffeeRef.current.contains(event.target as Node)) {
         setShowCoffeeOptions(false);
+      }
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+        setLangDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -2212,28 +2219,62 @@ export default function App() {
             </div>
           </div>
 
-          {/* High-Visibility Language Selector with flag emojis & beautiful styling */}
-          <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-1.5 rounded-2xl border border-slate-800/80 shadow-[0_0_15px_rgba(0,0,0,0.3)] shrink-0">
-            <span className="text-[10px] text-slate-400 font-serif tracking-wider uppercase font-extrabold mr-1 flex items-center gap-1.5">
-              🌐 {language === "en" ? "Language:" : language === "de" ? "Sprache:" : language === "pt" ? "Idioma:" : "Idioma:"}
-            </span>
-            <div className="flex gap-1.5">
-              {(["es", "en", "pt", "de"] as const).map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => setLanguage(lang)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold uppercase transition-all duration-300 flex items-center gap-1.5 ${
-                    language === lang
-                      ? "bg-amber-500/20 border border-amber-500/50 text-amber-300 shadow-md shadow-amber-950/45 scale-105"
-                      : "border border-slate-800 text-slate-400 hover:text-slate-200 bg-slate-950/40 hover:bg-slate-900/80"
-                  }`}
-                  title={lang === "es" ? "Español" : lang === "en" ? "English" : lang === "pt" ? "Português" : "Deutsch"}
+          {/* Vertical Dropdown Language Selector ("Pestaña Desplegable Vertical") */}
+          <div className="relative shrink-0" ref={langDropdownRef}>
+            <button
+              onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+              className="flex items-center gap-2 bg-slate-900/60 hover:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-300 transition-all duration-200 shadow-md hover:border-amber-500/30 text-xs font-bold uppercase select-none cursor-pointer"
+              title={language === "es" ? "Cambiar idioma" : language === "en" ? "Change language" : language === "pt" ? "Alterar idioma" : "Sprache ändern"}
+              id="btn-language-selector-trigger"
+            >
+              <span className="text-sm">
+                {language === "es" ? "🇪🇸" : language === "en" ? "🇺🇸" : language === "pt" ? "🇵🇹" : "🇩🇪"}
+              </span>
+              <span className="text-[10px] tracking-widest text-slate-200">
+                {language === "es" ? "ESP" : language === "en" ? "ENG" : language === "pt" ? "POR" : "DEU"}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${langDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {langDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 4, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute right-0 top-full z-[100] mt-1 w-32 bg-slate-950/95 border border-slate-800 rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6)] py-1.5 flex flex-col divide-y divide-slate-900/60 backdrop-blur-md"
                 >
-                  <span className="text-sm">{lang === "es" ? "🇪🇸" : lang === "en" ? "🇺🇸" : lang === "pt" ? "🇵🇹" : "🇩🇪"}</span>
-                  <span className="text-[10px] tracking-wider">{lang === "es" ? "ESP" : lang === "en" ? "ENG" : lang === "pt" ? "POR" : "DEU"}</span>
-                </button>
-              ))}
-            </div>
+                  {(["es", "en", "pt", "de"] as const).map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        setLanguage(lang);
+                        setLangDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-xs font-bold uppercase transition-all duration-200 flex items-center gap-2 text-left hover:bg-slate-900 ${
+                        language === lang
+                          ? "text-amber-300 bg-amber-500/5 font-extrabold"
+                          : "text-slate-400 hover:text-slate-100"
+                      }`}
+                      title={lang === "es" ? "Español" : lang === "en" ? "English" : lang === "pt" ? "Português" : "Deutsch"}
+                    >
+                      <span className="text-sm shrink-0">
+                        {lang === "es" ? "🇪🇸" : lang === "en" ? "🇺🇸" : lang === "pt" ? "🇵🇹" : "🇩🇪"}
+                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] tracking-wider leading-none">
+                          {lang === "es" ? "ESP" : lang === "en" ? "ENG" : lang === "pt" ? "POR" : "DEU"}
+                        </span>
+                        <span className="text-[8px] text-slate-500 capitalize leading-normal mt-0.5">
+                          {lang === "es" ? "Español" : lang === "en" ? "English" : lang === "pt" ? "Português" : "Deutsch"}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
         </div>
@@ -2917,6 +2958,8 @@ export default function App() {
                       </button>
                     </div>
                   )}
+                  
+                  <BoxBreathingGuide language={language} />
                 </div>
               </div>
 
@@ -4183,6 +4226,8 @@ export default function App() {
                 )}
               </button>
             </div>
+
+            <KabbalahGuide language={language} />
 
             {/* Tree Reading results */}
             {treeReading && (
