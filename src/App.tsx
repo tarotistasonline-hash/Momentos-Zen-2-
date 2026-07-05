@@ -41,6 +41,7 @@ import { ZenVisualizer } from "./components/ZenVisualizer";
 import { BoxBreathingGuide } from "./components/BoxBreathingGuide";
 import { KabbalahGuide } from "./components/KabbalahGuide";
 import { exportReadingAsImage } from "./utils/exportImage";
+import { exportReadingAsPdf } from "./utils/exportPdf";
 // @ts-ignore
 import kabbalahTreeOfLifeImg from "./assets/images/kabbalah_tree_of_life_1782922797280.jpg";
 // @ts-ignore
@@ -55,6 +56,59 @@ function MovingDigit() {
     return () => clearInterval(timer);
   }, []);
   return <span>{val}</span>;
+}
+
+interface VoicePlayerButtonProps {
+  text: string;
+  language: "es" | "en" | "pt" | "de";
+  readingSpeechPlaying: boolean;
+  readingSpeechText: string | null;
+  speakReadingResult: (text: string) => void;
+  stopReadingResultSpeech: () => void;
+}
+
+function VoicePlayerButton({ 
+  text, 
+  language, 
+  readingSpeechPlaying, 
+  readingSpeechText, 
+  speakReadingResult, 
+  stopReadingResultSpeech 
+}: VoicePlayerButtonProps) {
+  const isPlaying = readingSpeechPlaying && readingSpeechText === text;
+  
+  const label = isPlaying
+    ? (language === "en" ? "Stop Voice" : language === "pt" ? "Parar Voz" : language === "de" ? "Stoppen" : "Detener Voz")
+    : (language === "en" ? "Listen" : language === "pt" ? "Ouvir Leitura" : language === "de" ? "Anhören" : "Escuchar Lectura");
+
+  return (
+    <button
+      onClick={() => isPlaying ? stopReadingResultSpeech() : speakReadingResult(text)}
+      className={`px-3.5 py-1.5 rounded-xl text-[11px] font-bold uppercase transition-all duration-300 flex items-center gap-2 select-none cursor-pointer ${
+        isPlaying
+          ? "bg-amber-500/25 border border-amber-500/80 text-amber-300 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.25)] scale-[1.02]"
+          : "bg-slate-950/70 border border-slate-800 text-slate-300 hover:text-white hover:border-amber-500/40 hover:bg-slate-900/90 shadow-md hover:scale-[1.02]"
+      }`}
+      title={label}
+    >
+      {isPlaying ? (
+        <>
+          <VolumeX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>{label}</span>
+          <span className="flex gap-0.5 items-center h-2.5 shrink-0">
+            <span className="w-0.5 bg-amber-400 h-2 rounded animate-pulse" style={{ animationDuration: "0.6s" }}></span>
+            <span className="w-0.5 bg-amber-400 h-3.5 rounded animate-pulse" style={{ animationDelay: "150ms", animationDuration: "0.8s" }}></span>
+            <span className="w-0.5 bg-amber-400 h-2.5 rounded animate-pulse" style={{ animationDelay: "300ms", animationDuration: "0.5s" }}></span>
+          </span>
+        </>
+      ) : (
+        <>
+          <Volume2 className="w-3.5 h-3.5 text-slate-400 hover:text-amber-400 transition-colors shrink-0" />
+          <span>{label}</span>
+        </>
+      )}
+    </button>
+  );
 }
 
 
@@ -176,6 +230,11 @@ export default function App() {
   const coffeeRef = useRef<HTMLDivElement>(null);
   const [langDropdownOpen, setLangDropdownOpen] = useState<boolean>(false);
   const langDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Reading Speech Synthesis States
+  const [readingSpeechText, setReadingSpeechText] = useState<string | null>(null);
+  const [readingSpeechPlaying, setReadingSpeechPlaying] = useState<boolean>(false);
+  const readingUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Guestbook (Libro de Visitas) States
   const [guestbookMessages, setGuestbookMessages] = useState<any[]>(() => {
@@ -485,6 +544,8 @@ export default function App() {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
+      setReadingSpeechPlaying(false);
+      setReadingSpeechText(null);
     };
   }, [activeTab, language]);
 
@@ -506,13 +567,29 @@ export default function App() {
           // Find neutral/Latin American Spanish voices
           const neutralSpanish = voices.filter(v => 
             v.lang.toLowerCase().startsWith("es") && 
-            !v.lang.toLowerCase().endsWith("es") && 
+            !v.lang.toLowerCase().endsWith("-es") && 
             !v.name.toLowerCase().includes("spain") && 
             !v.name.toLowerCase().includes("españa") &&
             !v.name.toLowerCase().includes("castilla") &&
             !v.name.toLowerCase().includes("castellano")
           );
-          if (neutralSpanish.length > 0) {
+          
+          // Prioritize male/deep/google voices for a deeper mystical sound
+          const deepMaleNeutral = neutralSpanish.filter(v => 
+            v.name.toLowerCase().includes("male") || 
+            v.name.toLowerCase().includes("hombre") || 
+            v.name.toLowerCase().includes("varon") || 
+            v.name.toLowerCase().includes("raul") || 
+            v.name.toLowerCase().includes("andres") || 
+            v.name.toLowerCase().includes("carlos") || 
+            v.name.toLowerCase().includes("miguel") || 
+            v.name.toLowerCase().includes("mateo") || 
+            v.name.toLowerCase().includes("google")
+          );
+          
+          if (deepMaleNeutral.length > 0) {
+            defaultVoice = deepMaleNeutral[0];
+          } else if (neutralSpanish.length > 0) {
             defaultVoice = neutralSpanish[0];
           }
         }
@@ -1923,9 +2000,10 @@ export default function App() {
 
     const utterance = new SpeechSynthesisUtterance(text);
     activeUtteranceRef.current = utterance;
-    utterance.lang = langCode === "en" ? "en-US" : langCode === "pt" ? "pt-BR" : "es-ES";
+    // Use neutral Spanish (es-MX) instead of Castilian (es-ES) for neutral voice fallback
+    utterance.lang = langCode === "en" ? "en-US" : langCode === "pt" ? "pt-BR" : "es-MX";
     utterance.rate = 0.82; // beautiful, slow, relaxed meditative reading pace
-    utterance.pitch = 0.95; // slightly lower pitch for a warmer, calming voice
+    utterance.pitch = 0.80; // slightly lower, deeper pitch for a warmer, calmer, deeper voice
 
     const voices = window.speechSynthesis.getVoices();
     const selectedVoice = voices.find(v => v.voiceURI === selectedVoiceURI);
@@ -1933,9 +2011,30 @@ export default function App() {
       utterance.voice = selectedVoice;
       utterance.lang = selectedVoice.lang;
     } else {
-      const matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith(langCode));
-      if (matchedVoice) {
-        utterance.voice = matchedVoice;
+      if (langCode === "es") {
+        const neutralSpanish = voices.find(v => 
+          v.lang.toLowerCase().startsWith("es") && 
+          !v.lang.toLowerCase().endsWith("-es") &&
+          !v.name.toLowerCase().includes("spain") &&
+          !v.name.toLowerCase().includes("españa") &&
+          !v.name.toLowerCase().includes("castilla")
+        );
+        if (neutralSpanish) {
+          utterance.voice = neutralSpanish;
+          utterance.lang = neutralSpanish.lang;
+        } else {
+          const matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith(langCode));
+          if (matchedVoice) {
+            utterance.voice = matchedVoice;
+            utterance.lang = matchedVoice.lang;
+          }
+        }
+      } else {
+        const matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith(langCode));
+        if (matchedVoice) {
+          utterance.voice = matchedVoice;
+          utterance.lang = matchedVoice.lang;
+        }
       }
     }
 
@@ -1960,6 +2059,112 @@ export default function App() {
         }
       }
     }, 100);
+  };
+
+  // Helper to read cosmic/spiritual results aloud with a deep, neutral Spanish voice
+  const speakReadingResult = (textToRead: string) => {
+    if (!window.speechSynthesis) return;
+
+    if (readingSpeechPlaying && readingSpeechText === textToRead) {
+      stopReadingResultSpeech();
+      return;
+    }
+
+    // Stop active meditation voice guide if playing
+    if (voicePlaying) {
+      stopVoiceMeditation();
+    }
+
+    // Strip out emojis and excessive markdown characters for clean, high-quality speech synthesis
+    const cleanText = textToRead
+      .replace(/[🔮✨🌙🌟🌿📜💎🧘‍♂️🧘‍♀️☸️⚓🤍🍃🌬️🎈💨🔳📖🧠🔱🕯️🧬🗝️🌠🪐☄️🛡️⚔️]/g, "")
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "")
+      .replace(/#/g, "")
+      .replace(/-\s+/g, "")
+      .replace(/•\s+/g, "")
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    readingUtteranceRef.current = utterance;
+    
+    // Deep, resonant, slow reading pace for mystical readings
+    utterance.pitch = 0.78; // Very deep, spiritual pitch
+    utterance.rate = 0.84; // Perfect cadence for deep, wise listening
+
+    // Language
+    utterance.lang = language === "en" ? "en-US" : language === "pt" ? "pt-BR" : "es-MX";
+
+    // Select the best deep/neutral voice
+    const voices = window.speechSynthesis.getVoices();
+    const selectedVoice = voices.find(v => v.voiceURI === selectedVoiceURI);
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
+    } else {
+      // Look for a neutral Spanish voice first
+      if (language === "es") {
+        const neutralSpanish = voices.find(v => 
+          v.lang.toLowerCase().startsWith("es") && 
+          !v.lang.toLowerCase().endsWith("-es") &&
+          !v.name.toLowerCase().includes("spain") &&
+          !v.name.toLowerCase().includes("españa") &&
+          !v.name.toLowerCase().includes("castilla")
+        );
+        if (neutralSpanish) {
+          utterance.voice = neutralSpanish;
+          utterance.lang = neutralSpanish.lang;
+        } else {
+          const generalEs = voices.find(v => v.lang.toLowerCase().startsWith("es"));
+          if (generalEs) {
+            utterance.voice = generalEs;
+            utterance.lang = generalEs.lang;
+          }
+        }
+      } else {
+        const matchedVoice = voices.find(v => v.lang.toLowerCase().startsWith(language));
+        if (matchedVoice) {
+          utterance.voice = matchedVoice;
+          utterance.lang = matchedVoice.lang;
+        }
+      }
+    }
+
+    utterance.onend = () => {
+      setReadingSpeechPlaying(false);
+      setReadingSpeechText(null);
+    };
+
+    utterance.onerror = () => {
+      setReadingSpeechPlaying(false);
+      setReadingSpeechText(null);
+    };
+
+    setReadingSpeechText(textToRead);
+    setReadingSpeechPlaying(true);
+
+    try {
+      window.speechSynthesis.cancel();
+      setTimeout(() => {
+        if (window.speechSynthesis) {
+          window.speechSynthesis.speak(utterance);
+        }
+      }, 100);
+    } catch (e) {
+      console.error("Speech Synthesis error:", e);
+      setReadingSpeechPlaying(false);
+      setReadingSpeechText(null);
+    }
+  };
+
+  const stopReadingResultSpeech = () => {
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    } catch (e) {}
+    setReadingSpeechPlaying(false);
+    setReadingSpeechText(null);
   };
 
   const playScript = (sentences: string[], index: number) => {
@@ -2804,7 +3009,19 @@ export default function App() {
                         </button>
                       </div>
 
-                      {breathingVoiceGuide && systemVoices.filter(v => v.lang.toLowerCase().startsWith(language)).length > 0 && (
+                      {breathingVoiceGuide && systemVoices.filter(v => {
+                        if (language === "es") {
+                          const hasNeutral = systemVoices.some(sv => 
+                            sv.lang.toLowerCase().startsWith("es") && 
+                            !(sv.lang.toLowerCase().endsWith("-es") || sv.name.toLowerCase().includes("spain") || sv.name.toLowerCase().includes("españa") || sv.name.toLowerCase().includes("castilla") || sv.name.toLowerCase().includes("castellano"))
+                          );
+                          if (hasNeutral) {
+                            const isCastilian = v.lang.toLowerCase().endsWith("-es") || v.name.toLowerCase().includes("spain") || v.name.toLowerCase().includes("españa") || v.name.toLowerCase().includes("castilla") || v.name.toLowerCase().includes("castellano");
+                            return v.lang.toLowerCase().startsWith("es") && !isCastilian;
+                          }
+                        }
+                        return v.lang.toLowerCase().startsWith(language);
+                      }).length > 0 && (
                         <div className="mt-1.5 pt-2 border-t border-slate-900/40 flex flex-col gap-1.5">
                           <label className="text-[10px] text-slate-400 font-semibold select-none">
                             {language === "en" ? "Select Voice Tone" : language === "pt" ? "Tom da Voz" : "Seleccionar Voz / Tono"}
@@ -2840,7 +3057,19 @@ export default function App() {
                               className="bg-slate-900/60 border border-slate-800 text-slate-200 text-[11px] rounded-xl px-2 py-1 flex-1 focus:outline-none focus:border-emerald-500/50 min-w-0"
                             >
                               {systemVoices
-                                .filter(v => v.lang.toLowerCase().startsWith(language))
+                                .filter(v => {
+                                  if (language === "es") {
+                                    const hasNeutral = systemVoices.some(sv => 
+                                      sv.lang.toLowerCase().startsWith("es") && 
+                                      !(sv.lang.toLowerCase().endsWith("-es") || sv.name.toLowerCase().includes("spain") || sv.name.toLowerCase().includes("españa") || sv.name.toLowerCase().includes("castilla") || sv.name.toLowerCase().includes("castellano"))
+                                    );
+                                    if (hasNeutral) {
+                                      const isCastilian = v.lang.toLowerCase().endsWith("-es") || v.name.toLowerCase().includes("spain") || v.name.toLowerCase().includes("españa") || v.name.toLowerCase().includes("castilla") || v.name.toLowerCase().includes("castellano");
+                                      return v.lang.toLowerCase().startsWith("es") && !isCastilian;
+                                    }
+                                  }
+                                  return v.lang.toLowerCase().startsWith(language);
+                                })
                                 .map((voice) => {
                                   let cleanName = voice.name;
                                   cleanName = cleanName
@@ -3870,15 +4099,45 @@ export default function App() {
                       {language === "en" ? "Therapeutic Tarot Reading" : language === "pt" ? "Leitura de Tarot Terapêutico" : "Lectura de Tarot Terapéutico"}
                     </h2>
                   </div>
-                  <button
-                    onClick={() => exportReadingAsImage("tarot", tarotQuestion, tarotReading, language)}
-                    className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 hover:border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
-                  >
-                    <Image className="w-4 h-4" />
-                    <span>
-                      {language === "en" ? "Export as Image" : language === "pt" ? "Exportar como Imagem" : "Exportar como Imagen"}
-                    </span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <VoicePlayerButton 
+                      text={(() => {
+                        let txt = tarotReading.summary + ". ";
+                        if (tarotReading.interpretations) {
+                          tarotReading.interpretations.forEach((item: any) => {
+                            txt += `${item.cardName}: ${item.meaning || ""}. ${item.advice || ""}. `;
+                          });
+                        }
+                        if (tarotReading.advice) {
+                          txt += tarotReading.advice;
+                        }
+                        return txt;
+                      })()}
+                      language={language}
+                      readingSpeechPlaying={readingSpeechPlaying}
+                      readingSpeechText={readingSpeechText}
+                      speakReadingResult={speakReadingResult}
+                      stopReadingResultSpeech={stopReadingResultSpeech}
+                    />
+                    <button
+                      onClick={() => exportReadingAsImage("tarot", tarotQuestion, tarotReading, language)}
+                      className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 hover:border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
+                    >
+                      <Image className="w-4 h-4" />
+                      <span>
+                        {language === "en" ? "Export as Image" : language === "pt" ? "Exportar como Imagem" : "Exportar como Imagen"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => exportReadingAsPdf("tarot", language === "en" ? "Therapeutic Tarot" : language === "pt" ? "Tarot Terapêutico" : language === "de" ? "Therapeutisches Tarot" : "Tarot Terapéutico", tarotQuestion, tarotReading, language)}
+                      className="px-4 py-2 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>
+                        {language === "en" ? "Export as PDF" : language === "pt" ? "Exportar como PDF" : language === "de" ? "Als PDF exportieren" : "Exportar como PDF"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed font-semibold">
@@ -4085,15 +4344,45 @@ export default function App() {
                       {language === "en" ? "Ancestral Runes Reading" : language === "pt" ? "Leitura de Runas Ancestrais" : "Lectura de Runas Ancestrales"}
                     </h2>
                   </div>
-                  <button
-                    onClick={() => exportReadingAsImage("runas", runesQuestion, runesReading, language)}
-                    className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:border-purple-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
-                  >
-                    <Image className="w-4 h-4" />
-                    <span>
-                      {language === "en" ? "Export as Image" : language === "pt" ? "Exportar como Imagem" : "Exportar como Imagen"}
-                    </span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <VoicePlayerButton 
+                      text={(() => {
+                        let txt = runesReading.summary + ". ";
+                        if (runesReading.interpretations) {
+                          runesReading.interpretations.forEach((item: any) => {
+                            txt += `${item.runeName}: ${item.meaning || ""}. ${item.advice || ""}. `;
+                          });
+                        }
+                        if (runesReading.advice) {
+                          txt += runesReading.advice;
+                        }
+                        return txt;
+                      })()}
+                      language={language}
+                      readingSpeechPlaying={readingSpeechPlaying}
+                      readingSpeechText={readingSpeechText}
+                      speakReadingResult={speakReadingResult}
+                      stopReadingResultSpeech={stopReadingResultSpeech}
+                    />
+                    <button
+                      onClick={() => exportReadingAsImage("runas", runesQuestion, runesReading, language)}
+                      className="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:border-purple-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
+                    >
+                      <Image className="w-4 h-4" />
+                      <span>
+                        {language === "en" ? "Export as Image" : language === "pt" ? "Exportar como Imagem" : "Exportar como Imagen"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => exportReadingAsPdf("runas", language === "en" ? "Ancestral Runas" : language === "pt" ? "Runas Ancestrais" : language === "de" ? "Ahnenschrift-Runen" : "Runas Ancestrales", runesQuestion, runesReading, language)}
+                      className="px-4 py-2 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>
+                        {language === "en" ? "Export as PDF" : language === "pt" ? "Exportar como PDF" : language === "de" ? "Als PDF exportieren" : "Exportar como PDF"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed font-semibold">
@@ -4154,9 +4443,33 @@ export default function App() {
                   <p className="text-xs text-slate-400 mt-0.5">Día del ciclo: {lunaPhase.cycleDay}</p>
                   
                   {lunaReading && (
-                    <p className="text-xs text-slate-300 leading-relaxed mt-3 font-semibold">
-                      {lunaReading.alignmentExplanation}
-                    </p>
+                    <div className="flex flex-col gap-2 mt-3 pt-2 border-t border-slate-900/30">
+                      <div className="flex justify-between items-center flex-wrap gap-2">
+                        <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">Alineación Cósmica</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <VoicePlayerButton 
+                            text={`${lunaPhase.phaseName}. ${lunaReading.alignmentExplanation}`}
+                            language={language}
+                            readingSpeechPlaying={readingSpeechPlaying}
+                            readingSpeechText={readingSpeechText}
+                            speakReadingResult={speakReadingResult}
+                            stopReadingResultSpeech={stopReadingResultSpeech}
+                          />
+                          <button
+                            onClick={() => exportReadingAsPdf("luna", language === "en" ? "Lunar Influence Alignment" : language === "pt" ? "Influência Lunar" : "Alineación Lunar Real", `${language === "en" ? "Moon phase" : language === "pt" ? "Fase da lua" : "Fase lunar"}: ${lunaPhase.phaseName}`, lunaReading, language)}
+                            className="px-3 py-1 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-[10px] font-bold uppercase transition-all duration-300 flex items-center gap-1.5 select-none cursor-pointer hover:scale-[1.02]"
+                          >
+                            <Download className="w-3 h-3 text-emerald-400 shrink-0" />
+                            <span>
+                              {language === "en" ? "Export PDF" : language === "pt" ? "Exportar PDF" : language === "de" ? "PDF Exportieren" : "Exportar PDF"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed font-semibold">
+                        {lunaReading.alignmentExplanation}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -4232,6 +4545,47 @@ export default function App() {
             {/* Tree Reading results */}
             {treeReading && (
               <div className="bg-slate-900/20 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 animate-fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-900/50">
+                  <div>
+                    <span className="text-[10px] font-bold tracking-widest text-emerald-400 uppercase">MAPA DE ALINEACIÓN CABALÍSTICA</span>
+                    <h2 className="font-serif text-lg font-bold text-slate-100 mt-1">
+                      El Árbol de la Vida
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <VoicePlayerButton 
+                      text={(() => {
+                        let txt = `${treeReading.activeSefirah?.name || ""}. ${treeReading.activeSefirah?.archetype || ""}. ${treeReading.activeSefirah?.value || ""}. ${treeReading.alignmentExplanation || ""}. `;
+                        if (treeReading.sefirotMap) {
+                          treeReading.sefirotMap.forEach((item: any) => {
+                            txt += `${item.sefirah}: Fortaleza: ${item.strength || ""}. Desafío: ${item.shadow || ""}. `;
+                          });
+                        }
+                        if (treeReading.kabbalisticMeditation) {
+                          txt += `Meditación de hoy: ${treeReading.kabbalisticMeditation.title || ""}. Práctica: ${treeReading.kabbalisticMeditation.practice || ""}. `;
+                        }
+                        if (treeReading.blessing) {
+                          txt += treeReading.blessing;
+                        }
+                        return txt;
+                      })()}
+                      language={language}
+                      readingSpeechPlaying={readingSpeechPlaying}
+                      readingSpeechText={readingSpeechText}
+                      speakReadingResult={speakReadingResult}
+                      stopReadingResultSpeech={stopReadingResultSpeech}
+                    />
+                    <button
+                      onClick={() => exportReadingAsPdf("arbol", language === "en" ? "Tree of Life Alignment" : language === "pt" ? "Alinhamento da Árvore da Vida" : "Alineación del Árbol de la Vida", `Nacimiento: ${treeBirth || ""} | Área: ${treeArea || "General"}`, treeReading, language)}
+                      className="px-3.5 py-1.5 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-[11px] font-bold uppercase transition-all duration-300 flex items-center gap-2 select-none cursor-pointer hover:scale-[1.02]"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>
+                        {language === "en" ? "Export PDF" : language === "pt" ? "Exportar PDF" : language === "de" ? "PDF Exportieren" : "Exportar PDF"}
+                      </span>
+                    </button>
+                  </div>
+                </div>
                 
                 {/* Active Sefirah Box */}
                 <div className="p-5 bg-gradient-to-br from-emerald-950/15 to-slate-950/40 border border-emerald-500/20 rounded-2xl flex items-center gap-4">
@@ -4389,11 +4743,44 @@ export default function App() {
             {/* Numerology Reading Results */}
             {numerologyReading && (
               <div className="bg-slate-900/20 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 animate-fade-in">
-                <div>
-                  <span className="text-[10px] font-bold tracking-widest text-emerald-400 uppercase">MAPA DE VIBRACIÓN PITAGÓRICA</span>
-                  <h2 className="font-serif text-lg font-bold text-slate-100 mt-1">
-                    Análisis de Vibración Pitagórica
-                  </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold tracking-widest text-emerald-400 uppercase">MAPA DE VIBRACIÓN PITAGÓRICA</span>
+                    <h2 className="font-serif text-lg font-bold text-slate-100 mt-1">
+                      Análisis de Vibración Pitagórica
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <VoicePlayerButton 
+                      text={(() => {
+                        let txt = `${numerologyReading.introduction || ""}. `;
+                        if (numerologyReading.scores) {
+                          txt += `Camino de vida: ${numerologyReading.scores.lifePath || ""}. `;
+                          txt += `Expresión de alma: ${numerologyReading.scores.soulExpression || ""}. `;
+                          txt += `Deseo del corazón: ${numerologyReading.scores.heartDesire || ""}. `;
+                          txt += `Destino pitagórico: ${numerologyReading.scores.destinyNumber || ""}. `;
+                        }
+                        if (numerologyReading.cosmicAdvice) {
+                          txt += numerologyReading.cosmicAdvice;
+                        }
+                        return txt;
+                      })()}
+                      language={language}
+                      readingSpeechPlaying={readingSpeechPlaying}
+                      readingSpeechText={readingSpeechText}
+                      speakReadingResult={speakReadingResult}
+                      stopReadingResultSpeech={stopReadingResultSpeech}
+                    />
+                    <button
+                      onClick={() => exportReadingAsPdf("numerologia", language === "en" ? "Pythagorean Numerology" : language === "pt" ? "Numerologia Pitagórica" : "Numerología Pitagórica", `Nombre: ${numName || ""} | Nacimiento: ${numBirth || ""}`, numerologyReading, language)}
+                      className="px-3.5 py-1.5 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-[11px] font-bold uppercase transition-all duration-300 flex items-center gap-2 select-none cursor-pointer hover:scale-[1.02]"
+                    >
+                      <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>
+                        {language === "en" ? "Export PDF" : language === "pt" ? "Exportar PDF" : language === "de" ? "PDF Exportieren" : "Exportar PDF"}
+                      </span>
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed font-semibold">
@@ -4796,13 +5183,44 @@ export default function App() {
 
                   {/* Channeled Message Details */}
                   <div className="flex-1 w-full flex flex-col gap-5">
-                    <div>
-                      <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">
-                        {language === "en" ? "CHANNELED ANGELIC MESSAGE" : language === "pt" ? "MENSAGEM CANALIZADA" : "MENSAJE CELESTIAL CANALIZADO"}
-                      </span>
-                      <h3 className="text-xl sm:text-2xl font-serif font-black text-slate-100 mt-1">
-                        {angelsReading.angelTitle}
-                      </h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">
+                          {language === "en" ? "CHANNELED ANGELIC MESSAGE" : language === "pt" ? "MENSAGEM CANALIZADA" : "MENSAJE CELESTIAL CANALIZADO"}
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-serif font-black text-slate-100 mt-1">
+                          {angelsReading.angelTitle}
+                        </h3>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+                        <VoicePlayerButton 
+                          text={(() => {
+                            let txt = `${angelsReading.angelName || ""}, ${angelsReading.angelTitle || ""}. `;
+                            if (angelsReading.crystal) {
+                              txt += `${language === "en" ? "Connection Crystal" : language === "pt" ? "Cristal de conexão" : "Cristal de conexión"}: ${angelsReading.crystal}. `;
+                            }
+                            txt += `${angelsReading.coreMessage || ""}. `;
+                            if (angelsReading.affirmation) {
+                              txt += `${language === "en" ? "Daily light affirmation" : language === "pt" ? "Afirmação diária de luz" : "Afirmación diaria de luz"}: ${angelsReading.affirmation}. `;
+                            }
+                            return txt;
+                          })()}
+                          language={language}
+                          readingSpeechPlaying={readingSpeechPlaying}
+                          readingSpeechText={readingSpeechText}
+                          speakReadingResult={speakReadingResult}
+                          stopReadingResultSpeech={stopReadingResultSpeech}
+                        />
+                        <button
+                          onClick={() => exportReadingAsPdf("angeles", language === "en" ? "Channeled Angelic Guidance" : language === "pt" ? "Orientação Angélica" : "Mensaje de los Ángeles", language === "en" ? "Sensing Energetic Frequency" : language === "pt" ? "Sintonização de Frequência" : "Sintonización de Frecuencia Energética", angelsReading, language)}
+                          className="px-3.5 py-1.5 bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-[11px] font-bold uppercase transition-all duration-300 flex items-center gap-2 select-none cursor-pointer hover:scale-[1.02]"
+                        >
+                          <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>
+                            {language === "en" ? "Export PDF" : language === "pt" ? "Exportar PDF" : language === "de" ? "PDF Exportieren" : "Exportar PDF"}
+                          </span>
+                        </button>
+                      </div>
                     </div>
 
                     <div className="text-slate-300 text-xs sm:text-sm leading-relaxed space-y-3 font-semibold bg-slate-950/30 p-5 rounded-2xl border border-slate-900">
