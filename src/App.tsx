@@ -42,7 +42,7 @@ import { exportReadingAsImage } from "./utils/exportImage";
 // @ts-ignore
 import kabbalahTreeOfLifeImg from "./assets/images/kabbalah_tree_of_life_1782922797280.jpg";
 // @ts-ignore
-import zenMeditationImg from "./assets/images/zen_meditation_1783202684621.jpg";
+import zenMeditationImg from "./assets/images/zen_medit_red_1783213377427.jpg";
 
 function MovingDigit() {
   const [val, setVal] = useState<number>(() => Math.floor(Math.random() * 10));
