@@ -25,6 +25,7 @@ import {
   BookOpen,
   Bell,
   RotateCcw,
+  RotateCw,
   Check,
   Info,
   HelpCircle,
@@ -40,6 +41,7 @@ import { MetricsTab } from "./components/MetricsTab";
 import { ZenVisualizer } from "./components/ZenVisualizer";
 import { BoxBreathingGuide } from "./components/BoxBreathingGuide";
 import { KabbalahGuide } from "./components/KabbalahGuide";
+import TreeOfLifeVisualizer from "./components/TreeOfLifeVisualizer";
 import { exportReadingAsImage } from "./utils/exportImage";
 import { exportReadingAsPdf } from "./utils/exportPdf";
 // @ts-ignore
@@ -110,6 +112,9 @@ function VoicePlayerButton({
     </button>
   );
 }
+
+
+
 
 
 export default function App() {
@@ -200,6 +205,8 @@ export default function App() {
     }
   };
 
+
+
   // Expanded Article State (For interactive blog modal)
   const [expandedArticle, setExpandedArticle] = useState<any>(null);
   const [loadingArticle, setLoadingArticle] = useState<boolean>(false);
@@ -282,13 +289,33 @@ export default function App() {
   const [guestbookFormspreeId, setGuestbookFormspreeId] = useState<string>(() => {
     return safeLocalStorage.getItem("zen_formspree_id") || "xldebdzk";
   });
+  const [adsensePublisherId, setAdsensePublisherId] = useState<string>(() => {
+    return safeLocalStorage.getItem("zen_adsense_publisher_id") || "";
+  });
   const [isSubmittingGuestbook, setIsSubmittingGuestbook] = useState<boolean>(false);
   const [guestbookSuccess, setGuestbookSuccess] = useState<boolean>(false);
   const [showFormspreeConfig, setShowFormspreeConfig] = useState<boolean>(false);
+  const [isGuestbookExpanded, setIsGuestbookExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     safeLocalStorage.setItem("zen_formspree_id", guestbookFormspreeId);
   }, [guestbookFormspreeId]);
+
+  useEffect(() => {
+    safeLocalStorage.setItem("zen_adsense_publisher_id", adsensePublisherId);
+    const existing = document.getElementById("google-adsense-script");
+    if (existing) {
+      existing.remove();
+    }
+    if (adsensePublisherId && adsensePublisherId.trim() !== "") {
+      const script = document.createElement("script");
+      script.id = "google-adsense-script";
+      script.async = true;
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsensePublisherId.trim()}`;
+      script.setAttribute("crossorigin", "anonymous");
+      document.head.appendChild(script);
+    }
+  }, [adsensePublisherId]);
 
   // Client-side Global Observability & Error Reporting Hook
   useEffect(() => {
@@ -2413,13 +2440,26 @@ export default function App() {
         {/* Top Bar: Title & Beautiful Prominent Language Switcher */}
         <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-900/60 pb-3">
           
-          <div className="flex items-center gap-3">
+          <div 
+            onClick={() => {
+              setActiveTab("inicio");
+              setExpandedArticle(null);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="flex items-center gap-3 cursor-pointer select-none hover:opacity-90 active:scale-95 transition-all"
+            title={language === "es" ? "Volver al Inicio" : language === "en" ? "Go to Home" : language === "pt" ? "Ir para o Início" : "Zur Startseite"}
+          >
             <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
               <span className="text-lg">🧘</span>
             </div>
             <div>
-              <h1 className="font-serif text-base sm:text-xl font-bold tracking-wide text-slate-100">
+              <h1 className="font-serif text-base sm:text-xl font-bold tracking-wide text-slate-100 flex items-center gap-1.5">
                 <TwinkleText text={dict.title} glowColor="rgba(249, 168, 37, 0.5)" />
+                {activeTab !== "inicio" && (
+                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-1.5 py-0.5 rounded-full ml-1 select-none">
+                    {language === "es" ? "Volver" : language === "en" ? "Home" : language === "pt" ? "Voltar" : "Zurück"}
+                  </span>
+                )}
               </h1>
             </div>
           </div>
@@ -2652,6 +2692,8 @@ export default function App() {
         {/* TAB 1: INICIO & DAILY MINDFULNESS */}
         {activeTab === "inicio" && !expandedArticle && (
           <div className="max-w-4xl mx-auto w-full flex flex-col gap-6">
+
+
             
             {/* Horizontal Quick Jump Navigation Menu */}
             <div className="bg-slate-950/85 border border-slate-900 rounded-2xl p-2.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-2xl backdrop-blur-sm shrink-0">
@@ -2663,27 +2705,35 @@ export default function App() {
                 { name: "🎵 Music & Sounds", id: "mezclador-sonidos" },
                 { name: "🗣️ Voice Guided", id: "meditacion-guiada-voz" },
                 { name: "🌸 Thematic Packs", id: "colecciones-tematicas-meditacion" },
+                { name: "📚 Blog & Articles", id: "blog-inicio" },
                 { name: "✍️ Guestbook", id: "libro-visitas" }
               ] : language === "pt" ? [
                 { name: "🧘 Guia Diário", id: "guia-diaria" },
                 { name: "🎵 Música e Sons", id: "mezclador-sonidos" },
                 { name: "🗣️ Guiada por Voz", id: "meditacion-guiada-voz" },
                 { name: "🌸 Coleções Temáticas", id: "colecciones-tematicas-meditacion" },
+                { name: "📚 Blog e Artigos", id: "blog-inicio" },
                 { name: "✍️ Livro de Visitas", id: "libro-visitas" }
               ] : [
                 { name: "🧘 Guía Diaria", id: "guia-diaria" },
                 { name: "🎵 Música y Sonidos", id: "mezclador-sonidos" },
                 { name: "🗣️ Guiada por Voz", id: "meditacion-guiada-voz" },
                 { name: "🌸 Colecciones Temáticas", id: "colecciones-tematicas-meditacion" },
+                { name: "📚 Blog y Artículos", id: "blog-inicio" },
                 { name: "✍️ Libro de Visitas", id: "libro-visitas" }
               ])).map((item) => (
                 <button
                   key={item.id}
                   onClick={() => {
-                    const el = document.getElementById(item.id);
-                    if (el) {
-                      el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    if (item.id === "libro-visitas") {
+                      setIsGuestbookExpanded(true);
                     }
+                    setTimeout(() => {
+                      const el = document.getElementById(item.id);
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    }, item.id === "libro-visitas" ? 150 : 0);
                   }}
                   className="px-3.5 py-2 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900 text-slate-300 hover:text-emerald-300 text-[11px] sm:text-xs font-bold tracking-wide whitespace-nowrap transition-all duration-300 shrink-0 cursor-pointer shadow-sm active:scale-95"
                 >
@@ -3147,20 +3197,58 @@ export default function App() {
 
                   {!isBreathingActive ? (
                     <>
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="text-xs font-bold text-slate-400">DURACIÓN DE SESIÓN:</span>
-                        <div className="flex gap-1 bg-slate-950/40 p-0.5 rounded-lg border border-slate-900">
-                          {[1, 2, 5].map((mins) => (
-                            <button
-                              key={mins}
-                              onClick={() => setBreathingSessionLength(mins)}
-                              className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
-                                breathingSessionLength === mins ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-slate-200"
-                              }`}
-                            >
-                              {mins}M
-                            </button>
-                          ))}
+                      <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs font-bold text-slate-400">
+                            {language === "en" ? "SESSION DURATION:" : language === "pt" ? "DURAÇÃO DA SESSÃO:" : language === "de" ? "SITZUNGSDAUER:" : "DURACIÓN DE SESIÓN:"}
+                          </span>
+                          <span className="text-xs font-extrabold text-emerald-400 font-mono">
+                            {breathingSessionLength} {language === "en" ? "min" : language === "de" ? "Min." : "min"}
+                          </span>
+                        </div>
+
+                        {/* Presets and Slider Block */}
+                        <div className="flex flex-col gap-2.5 bg-slate-950/20 p-3 rounded-2xl border border-slate-900">
+                          <div className="flex justify-between items-center gap-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                              {language === "en" ? "Presets:" : language === "pt" ? "Atalhos:" : language === "de" ? "Vorlagen:" : "Ajustes rápidos:"}
+                            </span>
+                            <div className="flex gap-1">
+                              {[1, 2, 5, 10, 15, 20].map((mins) => (
+                                <button
+                                  key={mins}
+                                  onClick={() => setBreathingSessionLength(mins)}
+                                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                                    breathingSessionLength === mins
+                                      ? "bg-emerald-600 text-white shadow-sm"
+                                      : "bg-slate-950/40 text-slate-400 hover:text-slate-200 border border-slate-900"
+                                  }`}
+                                >
+                                  {mins}M
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex justify-between text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                              <span>{language === "en" ? "Slider:" : language === "pt" ? "Ajuste Fino:" : language === "de" ? "Regler:" : "Ajuste Fino:"}</span>
+                              <span className="text-slate-400 font-mono">{breathingSessionLength}m</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="1"
+                              max="30"
+                              value={breathingSessionLength}
+                              onChange={(e) => setBreathingSessionLength(parseInt(e.target.value, 10))}
+                              className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-emerald-500 focus:outline-none"
+                            />
+                            <div className="flex justify-between text-[9px] font-semibold text-slate-600 font-mono">
+                              <span>1m</span>
+                              <span>15m</span>
+                              <span>30m</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
@@ -3169,13 +3257,15 @@ export default function App() {
                         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3 rounded-xl transition-all shadow-md shadow-emerald-950/20 flex items-center justify-center gap-1.5"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" />
-                        <span>Comenzar Respiración</span>
+                        <span>
+                          {language === "en" ? "Start Breathing" : language === "pt" ? "Iniciar Respiração" : language === "de" ? "Atmung starten" : "Comenzar Respiración"}
+                        </span>
                       </button>
                     </>
                   ) : (
                     <div className="flex flex-col gap-2">
                       <div className="text-[10px] text-center font-semibold text-slate-400 tracking-wider uppercase">
-                        PROGRESO DE LA SESIÓN: {Math.floor(breathingTotalSeconds / 60)}:
+                        {language === "en" ? "SESSION PROGRESS:" : language === "pt" ? "PROGRESSO DA SESSÃO:" : language === "de" ? "SITZUNGSFORTSCHRITT:" : "PROGRESO DE LA SESIÓN:"} {Math.floor(breathingTotalSeconds / 60)}:
                         {(breathingTotalSeconds % 60).toString().padStart(2, "0")} / {breathingSessionLength}:00
                       </div>
                       <button
@@ -3183,7 +3273,9 @@ export default function App() {
                         className="w-full bg-red-950/40 hover:bg-red-900/30 border border-red-500/20 text-red-400 font-bold text-xs py-3 rounded-xl transition-all flex items-center justify-center gap-1.5"
                       >
                         <Square className="w-3.5 h-3.5 fill-current" />
-                        <span>Detener Sesión</span>
+                        <span>
+                          {language === "en" ? "Stop Session" : language === "pt" ? "Parar Sessão" : language === "de" ? "Sitzung beenden" : "Detener Sesión"}
+                        </span>
                       </button>
                     </div>
                   )}
@@ -3744,13 +3836,58 @@ export default function App() {
               })()}
             </div>
 
+            {/* 📚 Blog & Articles Section */}
+            <div id="blog-inicio" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 scroll-mt-24 mt-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-emerald-400" /> {dict.libTitle}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  {dict.libDesc}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {MINDFULNESS_ARTICLES_LOCALIZED[language].map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => handleExpandArticle(item.title)}
+                    className="bg-slate-900/40 border border-slate-900/60 rounded-3xl p-5 hover:bg-slate-900/60 hover:border-emerald-500/20 transition-all cursor-pointer flex flex-col gap-4 group animate-fade-in"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-slate-950/80 border border-slate-900 flex items-center justify-center text-2xl group-hover:scale-105 transition-all select-none">
+                      {item.emoji}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">MINDFULNESS</h4>
+                      <h3 className="text-sm font-bold text-slate-200 mt-1.5 leading-snug group-hover:text-slate-100 transition-all">
+                        {item.title}
+                      </h3>
+                      <p className="text-[11px] text-slate-400 leading-relaxed mt-2 font-medium line-clamp-3">
+                        {item.summary}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-500 group-hover:underline mt-2">{dict.libReadMore}</span>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+
             {/* ✍️ Guestbook (Libro de Visitas) Section */}
-            <div id="libro-visitas" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 scroll-mt-24 mt-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div id="libro-visitas" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 scroll-mt-24 mt-4 transition-all duration-300">
+              <div 
+                onClick={() => setIsGuestbookExpanded(!isGuestbookExpanded)}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-900/10 p-2 -m-2 rounded-2xl transition-all"
+              >
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
                     <Feather className="w-5 h-5 text-amber-400" />
                     {language === "en" ? "Zen Guestbook" : language === "pt" ? "Livro de Visitas Zen" : "Libro de Visitas Zen"}
+                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full ml-1 animate-pulse hover:animate-none select-none">
+                      {isGuestbookExpanded 
+                        ? (language === "en" ? "Click to collapse 🔼" : language === "pt" ? "Clique para recolher 🔼" : "Clic para contraer 🔼")
+                        : (language === "en" ? "Click to expand 🔽" : language === "pt" ? "Clique para expandir 🔽" : "Clic para desplegar 🔽")}
+                    </span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1">
                     {language === "en" 
@@ -3764,171 +3901,262 @@ export default function App() {
                 {/* Admin configuration button */}
                 <button
                   type="button"
-                  onClick={() => setShowFormspreeConfig(!showFormspreeConfig)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 transition-all font-semibold flex items-center gap-1 self-start sm:self-center cursor-pointer active:scale-95"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowFormspreeConfig(!showFormspreeConfig);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[10px] text-slate-400 hover:text-slate-200 transition-all font-semibold flex items-center gap-1.5 self-start sm:self-center cursor-pointer active:scale-95"
                 >
                   <Settings className="w-3.5 h-3.5" />
-                  {language === "en" ? "Config Formspree" : language === "pt" ? "Configurar Formspree" : "Configurar Formspree"}
+                  {language === "en" ? "Settings & AdSense" : language === "pt" ? "Ajustes e Monetização" : "Ajustes y Monetización (AdSense)"}
                 </button>
               </div>
 
-              {/* Formspree Config Panel */}
+              {/* Settings & AdSense Panel */}
               <AnimatePresence>
                 {showFormspreeConfig && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden bg-slate-950/45 border border-slate-900 rounded-2xl p-4 flex flex-col gap-3"
+                    className="overflow-hidden bg-slate-950/70 border border-slate-900 rounded-2xl p-5 flex flex-col gap-5 shadow-2xl"
                   >
-                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                      {language === "en" ? "Owner Administration" : "Administración del Creador"}
+                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <Settings className="w-3.5 h-3.5" />
+                      {language === "en" ? "Owner Settings & Monetization" : language === "pt" ? "Configurações e Monetização" : "Configuraciones del Creador y Monetización"}
                     </h4>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">
-                      {language === "en"
-                        ? "To receive guestbook messages directly in your email inbox, create a free form at Formspree.io, and enter your Form ID below:"
-                        : language === "pt"
-                        ? "Para receber mensagens do livro de visitas diretamente em seu e-mail, crie um formulário gratuito no Formspree.io e digite o ID do formulário abaixo:"
-                        : "Para recibir los mensajes del libro de visitas directamente en tu correo electrónico, crea un formulario gratis en Formspree.io e ingresa el ID de tu formulario a continuación:"}
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                      <input
-                        type="text"
-                        value={guestbookFormspreeId}
-                        onChange={(e) => setGuestbookFormspreeId(e.target.value)}
-                        placeholder="Ej: xldebdzk"
-                        className="bg-slate-900 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 flex-1 font-mono"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowFormspreeConfig(false)}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all cursor-pointer"
-                      >
-                        {language === "en" ? "Save ID" : "Guardar ID"}
-                      </button>
-                    </div>
-                    <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
-                      <span>💡</span>
-                      <span>
+
+                    {/* Section 1: Google AdSense */}
+                    <div className="border-t border-slate-900 pt-4 flex flex-col gap-3">
+                      <h5 className="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="text-sm">🪙</span> Google AdSense (Auto Ads)
+                      </h5>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
                         {language === "en"
-                          ? "Current endpoint: https://formspree.io/f/" + guestbookFormspreeId
-                          : "Enlace de envío actual: https://formspree.io/f/" + guestbookFormspreeId}
-                      </span>
+                          ? "Monetize this site with ads automatically! Paste your AdSense Publisher ID (ID de editor) below. Google 'Auto Ads' will automatically choose the best places to display ads on the pages without any coding needed."
+                          : language === "pt"
+                          ? "Monetize este site com anúncios automaticamente! Cole o seu ID de Editor do AdSense abaixo. O Google 'Auto Ads' escolherá automaticamente os melhores locais para exibir anúncios nas páginas sem precisar programar."
+                          : "¡Monetiza tu sitio web con publicidad de forma automática! Pega tu ID de Editor (Publisher ID) de AdSense abajo. El sistema de 'Anuncios Automáticos' (Auto Ads) de Google analizará el sitio y colocará los anuncios en los mejores lugares sin que tengas que programar nada."}
+                      </p>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={adsensePublisherId}
+                          onChange={(e) => setAdsensePublisherId(e.target.value)}
+                          placeholder="ca-pub-xxxxxxxxxxxxxxxx"
+                          className="bg-slate-900 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 flex-1 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowFormspreeConfig(false);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold text-xs transition-all cursor-pointer shadow-md active:scale-95"
+                        >
+                          {language === "en" ? "Save ID" : "Guardar ID"}
+                        </button>
+                      </div>
+
+                      <div className="text-[10px] text-slate-500 flex flex-col gap-1 bg-slate-950/40 p-2.5 rounded-xl border border-slate-900/60 leading-relaxed mt-1">
+                        <span className="font-bold text-slate-400 flex items-center gap-1">
+                          📋 {language === "en" ? "How to find it:" : language === "pt" ? "Como encontrar:" : "Cómo encontrarlo:"}
+                        </span>
+                        <p>
+                          {language === "en"
+                            ? "1. Log in to your Google AdSense account."
+                            : language === "pt"
+                            ? "1. Faça login na sua conta do Google AdSense."
+                            : "1. Inicia sesión en tu cuenta de Google AdSense."}
+                        </p>
+                        <p>
+                          {language === "en"
+                            ? "2. Go to 'Account' > 'Settings' > 'Account information'."
+                            : language === "pt"
+                            ? "2. Vá para 'Conta' > 'Configurações' > 'Informações da conta'."
+                            : "2. Ve a 'Cuenta' > 'Configuración' > 'Información de la cuenta'."}
+                        </p>
+                        <p>
+                          {language === "en"
+                            ? "3. Copy the 'Publisher ID' (starts with 'ca-pub-') and paste it here."
+                            : language === "pt"
+                            ? "3. Copie o 'ID de editor' (começa com 'ca-pub-') e cole-o aqui."
+                            : "3. Copia el 'ID de editor' (empieza con 'ca-pub-') y pégalo aquí."}
+                        </p>
+                        {adsensePublisherId && (
+                          <p className="text-emerald-500 font-semibold mt-1 flex items-center gap-1">
+                            <span>✅</span> {language === "en" ? "AdSense Script is dynamically active!" : language === "pt" ? "Script do AdSense ativado dinamicamente!" : "¡El script de AdSense se ha activado dinámicamente!"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section 2: Formspree (Guestbook) */}
+                    <div className="border-t border-slate-900 pt-4 flex flex-col gap-3">
+                      <h5 className="text-[11px] font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="text-sm">📧</span> Formspree (Notificaciones del Libro de Visitas)
+                      </h5>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        {language === "en"
+                          ? "To receive guestbook messages directly in your email inbox, create a free form at Formspree.io, and enter your Form ID below:"
+                          : language === "pt"
+                          ? "Para receber mensagens do livro de visitas diretamente em seu e-mail, crie um formulário gratuito no Formspree.io e digite o ID do formulário abaixo:"
+                          : "Para recibir los mensajes del libro de visitas directamente en tu correo electrónico, crea un formulario gratis en Formspree.io e ingresa el ID de tu formulario a continuación:"}
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={guestbookFormspreeId}
+                          onChange={(e) => setGuestbookFormspreeId(e.target.value)}
+                          placeholder="Ej: xldebdzk"
+                          className="bg-slate-900 border border-slate-850 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 flex-1 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowFormspreeConfig(false);
+                          }}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95"
+                        >
+                          {language === "en" ? "Save ID" : "Guardar ID"}
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <span>💡</span>
+                        <span>
+                          {language === "en"
+                            ? "Current endpoint: https://formspree.io/f/" + guestbookFormspreeId
+                            : "Enlace de envío actual: https://formspree.io/f/" + guestbookFormspreeId}
+                        </span>
+                      </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Guestbook Form */}
-              <form onSubmit={handleGuestbookSubmit} className="bg-slate-950/20 border border-slate-900 rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>✍️</span>
-                  {language === "en" ? "Leave a Message" : language === "pt" ? "Deixe uma Mensagem" : "Dejar un Mensaje"}
-                </h4>
-                
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
-                    {language === "en" ? "Name" : language === "pt" ? "Nome" : "Nombre"} <span className="text-amber-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={guestbookName}
-                    onChange={(e) => setGuestbookName(e.target.value)}
-                    placeholder={language === "en" ? "Your name..." : language === "pt" ? "Seu nome..." : "Tu nombre..."}
-                    className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all w-full"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
-                    {language === "en" ? "Your Message" : language === "pt" ? "Sua Mensagem" : "Tu Mensaje"} <span className="text-amber-500">*</span>
-                  </label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={guestbookMessage}
-                    onChange={(e) => setGuestbookMessage(e.target.value)}
-                    placeholder={language === "en" ? "Write your message or comment here..." : language === "pt" ? "Escreva sua mensagem ou comentário aqui..." : "Escribe tu mensaje o comentario aquí..."}
-                    className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all resize-none"
-                  />
-                </div>
-
-                {/* Submit button and notification success banner */}
-                <div className="flex flex-col gap-3">
-                  <button
-                    type="submit"
-                    disabled={isSubmittingGuestbook}
-                    className="w-full sm:w-auto self-end bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 disabled:from-slate-800 disabled:to-slate-850 disabled:text-slate-600 text-slate-950 font-extrabold text-xs sm:text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-950/40 active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-t border-emerald-300/35 animate-pulse hover:animate-none"
+              {/* Guestbook Form & Comments Collapsible Block */}
+              <AnimatePresence initial={false}>
+                {isGuestbookExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden flex flex-col gap-6"
                   >
-                    {isSubmittingGuestbook ? (
-                      <>
-                        <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                        {language === "en" ? "Sending to the universe..." : language === "pt" ? "Enviando ao universo..." : "Enviando al universo..."}
-                      </>
-                    ) : (
-                      <>
-                        <span>🕊️</span>
-                        {language === "en" ? "Leave Comment" : language === "pt" ? "Deixar Comentário" : "Dejar Comentario"}
-                      </>
-                    )}
-                  </button>
-
-                  {guestbookSuccess && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-pulse"
-                    >
-                      <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>
-                        {language === "en"
-                          ? "Message sent successfully to the universe and template creator! Thank you."
-                          : language === "pt"
-                          ? "Mensagem enviada com sucesso para o universo e criador do site! Obrigado."
-                          : "¡Mensaje enviado con éxito al universo y al creador del sitio! Gracias por tu mensaje."}
-                      </span>
-                    </motion.div>
-                  )}
-                </div>
-              </form>
-
-              {/* Comments List */}
-              <div className="flex flex-col gap-4 mt-2">
-                <div className="grid grid-cols-1 gap-3.5 max-h-[450px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-850">
-                  {guestbookMessages.map((msg: any) => (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-slate-950/35 border border-slate-900/60 p-4 rounded-2xl flex gap-3.5 relative overflow-hidden group hover:border-slate-800/80 transition-all duration-300"
-                    >
-                      {/* Avatar / Icon */}
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${msg.color || 'from-emerald-500 to-teal-600'} flex items-center justify-center text-lg shadow-inner select-none shrink-0`}>
-                        {msg.avatar || "🧘"}
+                    {/* Guestbook Form */}
+                    <form onSubmit={handleGuestbookSubmit} className="bg-slate-950/20 border border-slate-900 rounded-2xl p-4 sm:p-5 flex flex-col gap-4">
+                      <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span>✍️</span>
+                        {language === "en" ? "Leave a Message" : language === "pt" ? "Deixe uma Mensagem" : "Dejar un Mensaje"}
+                      </h4>
+                      
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
+                          {language === "en" ? "Name" : language === "pt" ? "Nome" : "Nombre"} <span className="text-amber-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={guestbookName}
+                          onChange={(e) => setGuestbookName(e.target.value)}
+                          placeholder={language === "en" ? "Your name..." : language === "pt" ? "Seu nome..." : "Tu nombre..."}
+                          className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all w-full"
+                        />
                       </div>
 
-                      {/* Content */}
-                      <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-serif text-sm font-bold text-slate-200">{msg.name}</span>
-                            <span className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
-                              📍 {msg.city}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] sm:text-xs font-bold text-slate-400 tracking-wide">
+                          {language === "en" ? "Your Message" : language === "pt" ? "Sua Mensagem" : "Tu Mensaje"} <span className="text-amber-500">*</span>
+                        </label>
+                        <textarea
+                          required
+                          rows={3}
+                          value={guestbookMessage}
+                          onChange={(e) => setGuestbookMessage(e.target.value)}
+                          placeholder={language === "en" ? "Write your message or comment here..." : language === "pt" ? "Escreva sua mensagem ou comentário aqui..." : "Escribe tu mensaje o comentario aquí..."}
+                          className="bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all resize-none"
+                        />
+                      </div>
+
+                      {/* Submit button and notification success banner */}
+                      <div className="flex flex-col gap-3">
+                        <button
+                          type="submit"
+                          disabled={isSubmittingGuestbook}
+                          className="w-full sm:w-auto self-end bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 disabled:from-slate-800 disabled:to-slate-850 disabled:text-slate-600 text-slate-950 font-extrabold text-xs sm:text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-950/40 active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-t border-emerald-300/35 animate-pulse hover:animate-none"
+                        >
+                          {isSubmittingGuestbook ? (
+                            <>
+                              <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                              {language === "en" ? "Sending to the universe..." : language === "pt" ? "Enviando ao universo..." : "Enviando al universo..."}
+                            </>
+                          ) : (
+                            <>
+                              <span>🕊️</span>
+                              {language === "en" ? "Leave Comment" : language === "pt" ? "Deixar Comentário" : "Dejar Comentario"}
+                            </>
+                          )}
+                        </button>
+
+                        {guestbookSuccess && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-pulse"
+                          >
+                            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <span>
+                              {language === "en"
+                                ? "Message sent successfully to the universe and template creator! Thank you."
+                                : language === "pt"
+                                ? "Mensagem enviada com sucesso para o universo e criador do site! Obrigado."
+                                : "¡Mensaje enviado con éxito al universo y al creador del sitio! Gracias por tu mensaje."}
                             </span>
-                          </div>
-                          <span className="text-[9px] text-slate-600 font-mono">
-                            {new Date(msg.date).toLocaleDateString(language, { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </span>
-                        </div>
-                        <p className="text-xs sm:text-[13px] text-slate-300 font-medium leading-relaxed font-serif break-words">
-                          "{msg.message}"
-                        </p>
+                          </motion.div>
+                        )}
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
+                    </form>
+
+                    {/* Comments List */}
+                    <div className="flex flex-col gap-4 mt-2">
+                      <div className="grid grid-cols-1 gap-3.5 max-h-[450px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-850">
+                        {guestbookMessages.map((msg: any) => (
+                          <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-slate-950/35 border border-slate-900/60 p-4 rounded-2xl flex gap-3.5 relative overflow-hidden group hover:border-slate-800/80 transition-all duration-300"
+                          >
+                            {/* Avatar / Icon */}
+                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${msg.color || 'from-emerald-500 to-teal-600'} flex items-center justify-center text-lg shadow-inner select-none shrink-0`}>
+                              {msg.avatar || "🧘"}
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-serif text-sm font-bold text-slate-200">{msg.name}</span>
+                                  <span className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
+                                    📍 {msg.city}
+                                  </span>
+                                </div>
+                                <span className="text-[9px] text-slate-600 font-mono">
+                                  {new Date(msg.date).toLocaleDateString(language, { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                              </div>
+                              <p className="text-xs sm:text-[13px] text-slate-300 font-medium leading-relaxed font-serif break-words">
+                                "{msg.message}"
+                              </p>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         )}
@@ -4541,6 +4769,8 @@ export default function App() {
             </div>
 
             <KabbalahGuide language={language} />
+
+            <TreeOfLifeVisualizer treeReading={treeReading} language={language} />
 
             {/* Tree Reading results */}
             {treeReading && (

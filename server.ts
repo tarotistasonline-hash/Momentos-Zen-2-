@@ -978,6 +978,8 @@ function getProceduralAffirmations(mood: string, stressLevel: string) {
   };
 }
 
+
+
 function getProceduralArticleExpansion(title: string, language: string) {
   const isEn = language === "en";
   const isPt = language === "pt";
@@ -1680,6 +1682,8 @@ Devuelve el resultado en JSON con el formato:
     res.json(fallback);
   }
 });
+
+
 
 // 7. Interactive Mindfulness Articles Expansion
 app.post("/api/articles/expand", async (req, res) => {
