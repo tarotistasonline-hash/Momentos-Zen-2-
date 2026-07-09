@@ -114,9 +114,36 @@ function VoicePlayerButton({
   );
 }
 
+const BREATHING_PARTICLES = Array.from({ length: 18 }, (_, i) => {
+  const angle = (i * 360 / 18) * (Math.PI / 180);
+  const baseRadius = 80 + (i % 3) * 12; // Radius between 80px and 104px
+  const size = 3 + (i % 3); // size from 3px to 5px
+  const speed = 2 + (i % 3) * 1.5; // animation duration
+  return {
+    id: i,
+    x: Math.cos(angle) * baseRadius,
+    y: Math.sin(angle) * baseRadius,
+    size,
+    speed,
+    delay: i * 0.12
+  };
+});
 
-
-
+const getParticleColor = (state: string, active: boolean, index: number) => {
+  if (!active) {
+    return index % 2 === 0 ? "bg-emerald-400/40 shadow-emerald-500/20" : "bg-teal-400/40 shadow-teal-500/20";
+  }
+  switch (state) {
+    case "inhale":
+      return index % 2 === 0 ? "bg-emerald-400/60 shadow-emerald-400/30" : "bg-teal-400/60 shadow-teal-400/30";
+    case "hold1":
+      return index % 2 === 0 ? "bg-amber-400/60 shadow-amber-400/30" : "bg-orange-400/60 shadow-orange-400/30";
+    case "exhale":
+      return index % 2 === 0 ? "bg-indigo-400/60 shadow-indigo-400/30" : "bg-violet-400/60 shadow-violet-400/30";
+    default:
+      return "bg-slate-400/40 shadow-slate-400/20";
+  }
+};
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
@@ -520,6 +547,7 @@ export default function App() {
   const [isVoiceExpanded, setIsVoiceExpanded] = useState<boolean>(false);
   const [isPacksExpanded, setIsPacksExpanded] = useState<boolean>(false);
   const [isLibraryExpanded, setIsLibraryExpanded] = useState<boolean>(false);
+  const [isDailyExpanded, setIsDailyExpanded] = useState<boolean>(false);
   const isAnyPackPlaying = voicePlaying && MEDITATION_PACKS[language].some(pack => pack.exercises.some(ex => ex.id === activeVoiceMed));
 
   // 1. Calculate and Fetch Moon Phase on Mount
@@ -2767,52 +2795,7 @@ export default function App() {
 
 
             
-            {/* Horizontal Quick Jump Navigation Menu */}
-            <div className="bg-slate-950/85 border border-slate-900 rounded-2xl p-2.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none shadow-2xl backdrop-blur-sm shrink-0">
-              <span className="text-[9px] font-extrabold text-slate-500 tracking-wider uppercase pl-2 shrink-0 hidden sm:inline mr-1">
-                {language === "en" ? "Jump to:" : language === "pt" ? "Ir para:" : "Ir a:"}
-              </span>
-              {((language === "en" ? [
-                { name: "🧘 Daily Guide", id: "guia-diaria" },
-                { name: "🎵 Music & Sounds", id: "mezclador-sonidos" },
-                { name: "🗣️ Voice Guided", id: "meditacion-guiada-voz" },
-                { name: "🌸 Thematic Packs", id: "colecciones-tematicas-meditacion" },
-                { name: "📚 Blog & Articles", id: "blog-inicio" },
-                { name: "✍️ Guestbook", id: "libro-visitas" }
-              ] : language === "pt" ? [
-                { name: "🧘 Guia Diário", id: "guia-diaria" },
-                { name: "🎵 Música e Sons", id: "mezclador-sonidos" },
-                { name: "🗣️ Guiada por Voz", id: "meditacion-guiada-voz" },
-                { name: "🌸 Coleções Temáticas", id: "colecciones-tematicas-meditacion" },
-                { name: "📚 Blog e Artigos", id: "blog-inicio" },
-                { name: "✍️ Livro de Visitas", id: "libro-visitas" }
-              ] : [
-                { name: "🧘 Guía Diaria", id: "guia-diaria" },
-                { name: "🎵 Música y Sonidos", id: "mezclador-sonidos" },
-                { name: "🗣️ Guiada por Voz", id: "meditacion-guiada-voz" },
-                { name: "🌸 Colecciones Temáticas", id: "colecciones-tematicas-meditacion" },
-                { name: "📚 Blog y Artículos", id: "blog-inicio" },
-                { name: "✍️ Libro de Visitas", id: "libro-visitas" }
-              ])).map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    if (item.id === "libro-visitas") {
-                      setIsGuestbookExpanded(true);
-                    }
-                    setTimeout(() => {
-                      const el = document.getElementById(item.id);
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }
-                    }, item.id === "libro-visitas" ? 150 : 0);
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 hover:bg-slate-900 text-slate-300 hover:text-emerald-300 text-[11px] sm:text-xs font-bold tracking-wide whitespace-nowrap transition-all duration-300 shrink-0 cursor-pointer shadow-sm active:scale-95"
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
+
 
             {/* Center Content: Daily Mood Tracker & Reflection */}
             <div className="flex flex-col gap-5">
@@ -2929,7 +2912,7 @@ export default function App() {
                           <button
                             key={i}
                             onClick={() => toggleAction(action)}
-                            className="flex items-center gap-3 text-left p-3 rounded-xl border border-slate-900/60 bg-slate-900/10 hover:bg-slate-900/30 transition-all"
+                            className="flex items-center gap-3 text-left p-3 rounded-xl border border-slate-900/60 bg-slate-900/10 hover:bg-slate-900/30 transition-all cursor-pointer"
                           >
                             <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all ${
                               isDone ? "bg-emerald-500/20 border-emerald-500 text-emerald-400" : "border-slate-800 text-transparent"
@@ -2964,6 +2947,70 @@ export default function App() {
 
                 {/* Animated Breathing Circle */}
                 <div className="relative w-48 h-48 flex items-center justify-center">
+                  
+                  {/* Subtle particle system overlay that expands and contracts in sync with breathing states */}
+                  <motion.div
+                    className="absolute inset-0 pointer-events-none flex items-center justify-center"
+                    animate={{
+                      rotate: isBreathingActive ? 360 : [0, 360],
+                    }}
+                    transition={{
+                      rotate: isBreathingActive
+                        ? { repeat: Infinity, duration: 25, ease: "linear" }
+                        : { repeat: Infinity, duration: 40, ease: "linear" }
+                    }}
+                  >
+                    {BREATHING_PARTICLES.map((p) => {
+                      const activeInhale = isBreathingActive && (breathingState === "inhale" || breathingState === "hold1");
+                      return (
+                        <motion.div
+                          key={p.id}
+                          className={`absolute rounded-full filter blur-[0.5px] transition-colors duration-1000 shadow-md ${getParticleColor(breathingState, isBreathingActive, p.id)}`}
+                          style={{
+                            width: `${p.size}px`,
+                            height: `${p.size}px`,
+                            left: "50%",
+                            top: "50%",
+                            marginLeft: `-${p.size / 2}px`,
+                            marginTop: `-${p.size / 2}px`,
+                          }}
+                          animate={{
+                            x: isBreathingActive
+                              ? activeInhale
+                                ? p.x * 1.25 // expand outward by 25%
+                                : p.x * 0.75 // contract inward by 25%
+                              : [p.x, p.x * 1.05, p.x], // gentle idle pulse
+                            y: isBreathingActive
+                              ? activeInhale
+                                ? p.y * 1.25
+                                : p.y * 0.75
+                              : [p.y, p.y * 1.05, p.y],
+                            opacity: isBreathingActive
+                              ? activeInhale
+                                ? 0.9
+                                : 0.4
+                              : [0.35, 0.6, 0.35],
+                            scale: isBreathingActive
+                              ? activeInhale
+                                ? 1.25
+                                : 0.75
+                              : [1, 1.1, 1],
+                          }}
+                          transition={isBreathingActive ? {
+                            type: "spring",
+                            stiffness: 35,
+                            damping: 12,
+                          } : {
+                            type: "tween",
+                            ease: "easeInOut",
+                            repeat: Infinity,
+                            duration: p.speed,
+                            delay: p.delay,
+                          }}
+                        />
+                      );
+                    })}
+                  </motion.div>
                   
                   {/* Outer breathing aura 1 */}
                   <motion.div
@@ -3385,13 +3432,13 @@ export default function App() {
                   className="flex justify-between items-center cursor-pointer select-none group"
                 >
                   <div className="flex-1">
-                    <h3 className="text-lg font-black tracking-wider flex items-center gap-2 group-hover:opacity-90 transition-opacity animate-blink-gold select-none">
-                      <Volume2 className={`w-5 h-5 ${(soundRain || soundWaves || soundBowl || soundBirds || soundBonfire || soundCosmicWind || soundBells || soundMusic) ? "text-amber-400 animate-pulse" : "text-amber-500"}`} /> 
+                    <h3 className="text-lg font-black tracking-wider flex items-center gap-2 group-hover:opacity-90 transition-opacity animate-blink-cyan select-none">
+                      <Volume2 className={`w-5 h-5 ${(soundRain || soundWaves || soundBowl || soundBirds || soundBonfire || soundCosmicWind || soundBells || soundMusic) ? "text-cyan-400 animate-pulse" : "text-cyan-500"}`} /> 
                       {dict.soundMixer}
                       {(soundRain || soundWaves || soundBowl || soundBirds || soundBonfire || soundCosmicWind || soundBells || soundMusic) && (
                         <span className="flex h-2 w-2 relative ml-1">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                         </span>
                       )}
                     </h3>
@@ -3400,8 +3447,8 @@ export default function App() {
                     </p>
                     {/* Blinking visual hint so visitors realize they must tap/click to expand/reveal */}
                     <div className="mt-2.5 flex items-center gap-2">
-                      <span className="text-[10px] bg-amber-500/10 border border-amber-500/25 text-amber-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1.5 shadow-sm shadow-amber-950/20">
-                        <span className="inline-block w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping"></span>
+                      <span className="text-[10px] bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1.5 shadow-sm shadow-cyan-950/20">
+                        <span className="inline-block w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping"></span>
                         {isMixerExpanded 
                           ? (language === "en" ? "TAP TO CLOSE ▴" : language === "pt" ? "TOQUE PARA FECHAR ▴" : language === "de" ? "TIPPEN ZUM SCHLIESSEN ▴" : "TOCA PARA CERRAR ▴")
                           : (language === "en" ? "TAP TO EXPAND & MIX SOUNDS ▾" : language === "pt" ? "TOQUE PARA EXPANDIR E MISTURAR SONS ▾" : language === "de" ? "TIPPEN ZUM ÖFFNEN & SOUNDS MISCHEN ▾" : "TOCA PARA DESPLEGAR Y MEZCLAR SONIDOS ▾")
@@ -3415,7 +3462,7 @@ export default function App() {
                         {language === "en" ? "Active" : language === "pt" ? "Ativo" : language === "de" ? "Aktiv" : "Activo"}
                       </span>
                     )}
-                    <div className="text-amber-500 group-hover:text-amber-300 transition-colors p-1.5 rounded-lg bg-amber-950/20 border border-amber-900/40 shadow-sm">
+                    <div className="text-cyan-500 group-hover:text-cyan-300 transition-colors p-1.5 rounded-lg bg-cyan-950/20 border border-cyan-900/40 shadow-sm">
                       <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isMixerExpanded ? "rotate-180" : ""}`} />
                     </div>
                   </div>
@@ -5920,23 +5967,71 @@ export default function App() {
         <p className="text-slate-600 mt-1">Conectando la sabiduría ancestral y la inteligencia artificial para guiar tu paz interior.</p>
         
         {/* Cafecito / Gratitude Section */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-3 bg-slate-900/40 px-6 py-4 rounded-3xl border border-amber-500/20 hover:border-amber-500/40 max-w-md sm:max-w-xl md:max-w-2xl shadow-xl transition-all duration-300">
-          <span className="bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-100 bg-clip-text text-transparent text-sm sm:text-base md:text-lg font-extrabold leading-relaxed animate-pulse drop-shadow-[0_1px_8px_rgba(245,158,11,0.45)] tracking-wide text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-3 bg-slate-900/40 px-6 py-4 rounded-3xl border border-emerald-500/20 hover:border-emerald-500/40 max-w-md sm:max-w-xl md:max-w-2xl shadow-xl transition-all duration-300">
+          <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent text-sm sm:text-base md:text-lg font-extrabold leading-relaxed animate-pulse drop-shadow-[0_1px_8px_rgba(16,185,129,0.45)] tracking-wide text-center sm:text-left">
             {language === "en"
-              ? "If you enjoyed this moment of relaxation 🤭"
+              ? "If you enjoyed this moment of relaxation 👇"
               : language === "pt"
-              ? "Se você gostou deste momento de relaxamento 🤭"
-              : "Si disfrutaste de este momento de relax 🤭"}
+              ? "Se você gostou deste momento de relaxamento 👇"
+              : "Si disfrutaste de este momento de relax 👇"}
           </span>
           <div className="relative shrink-0 mt-2 sm:mt-0" ref={coffeeRef}>
             <button
               onClick={() => setShowCoffeeOptions(!showCoffeeOptions)}
-              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-emerald-400 hover:text-white bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-500/70 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95 transition-all duration-300 select-none cursor-pointer"
-              title={language === "en" ? "Buy me a coffee 🤭" : language === "pt" ? "Me pagar um cafezinho 🤭" : "Invítame un cafecito 🤭"}
+              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-amber-400 hover:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-500/70 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95 transition-all duration-300 select-none cursor-pointer"
+              title={language === "en" ? "Buy me a steaming coffee ☕" : language === "pt" ? "Me pagar um cafezinho fumegante ☕" : "Invítame un cafecito humeante ☕"}
             >
-              <span className="flex items-center gap-1.5">
-                <Coffee className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>{language === "en" ? "Buy me a coffee 🤭" : language === "pt" ? "Me pagar um cafezinho 🤭" : "Invítame un cafecito 🤭"}</span>
+              <span className="flex items-center gap-2 animate-pulse text-amber-400 font-extrabold">
+                <div className="relative inline-flex items-center justify-center w-5 h-5">
+                  <Coffee className="w-5 h-5 text-amber-400 shrink-0 relative z-10" />
+                  {/* Rising steam animations for a truly "humeante" feel */}
+                  <motion.span
+                    className="absolute w-[1.5px] h-2.5 bg-amber-300/70 rounded-full blur-[0.3px]"
+                    style={{ left: '30%', top: '-2px' }}
+                    animate={{
+                      y: [0, -7],
+                      opacity: [0, 0.9, 0],
+                      scaleX: [1, 1.6, 0.8],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0,
+                    }}
+                  />
+                  <motion.span
+                    className="absolute w-[1.5px] h-3 bg-orange-300/60 rounded-full blur-[0.3px]"
+                    style={{ left: '50%', top: '-3px' }}
+                    animate={{
+                      y: [0, -10],
+                      opacity: [0, 0.8, 0],
+                      scaleX: [1, 2.0, 0.8],
+                    }}
+                    transition={{
+                      duration: 1.8,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.3,
+                    }}
+                  />
+                  <motion.span
+                    className="absolute w-[1.5px] h-2.5 bg-amber-400/70 rounded-full blur-[0.3px]"
+                    style={{ left: '70%', top: '-2px' }}
+                    animate={{
+                      y: [0, -6],
+                      opacity: [0, 0.9, 0],
+                      scaleX: [1, 1.5, 0.8],
+                    }}
+                    transition={{
+                      duration: 1.3,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.6,
+                    }}
+                  />
+                </div>
+                <span>{language === "en" ? "Buy me a steaming coffee ☕" : language === "pt" ? "Me pagar um cafezinho fumegante ☕" : "Invítame un cafecito humeante ☕"}</span>
               </span>
               <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform duration-300 ${showCoffeeOptions ? 'rotate-180' : ''}`} />
             </button>
