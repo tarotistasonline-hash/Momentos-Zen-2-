@@ -2423,6 +2423,16 @@ app.post("/api/visits/increment", (req, res) => {
   res.json({ count, online });
 });
 
+app.get("/ads.txt", (req, res) => {
+  res.type("text/plain");
+  res.send("google.com, pub-8099027931324700, DIRECT, f08c47fec0942fa0");
+});
+
+app.get("/app-ads.txt", (req, res) => {
+  res.type("text/plain");
+  res.send("google.com, pub-8099027931324700, DIRECT, f08c47fec0942fa0");
+});
+
 // Vite middleware configuration for full-stack SPA
 const startServer = async () => {
   if (process.env.NODE_ENV !== "production") {

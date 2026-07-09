@@ -32,6 +32,7 @@ import {
   Image,
   Download,
   Coffee,
+  Share2,
 } from "lucide-react";
 import { DICTIONARY, MINDFULNESS_ARTICLES_LOCALIZED, VOICE_SCRIPTS } from "./dictionary";
 import { MEDITATION_PACKS, PACK_LABELS } from "./meditationPacks";
@@ -121,7 +122,24 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
   const [language, setLanguage] = useState<"es" | "en" | "pt" | "de">(() => {
     const saved = safeLocalStorage.getItem("zen_language");
-    return (saved as "es" | "en" | "pt" | "de") || "es";
+    if (saved && (saved === "es" || saved === "en" || saved === "pt" || saved === "de")) {
+      return saved;
+    }
+    
+    // Automatic browser language detection on first load (when no saved preference exists)
+    if (typeof navigator !== "undefined") {
+      const browserLangs = navigator.languages || [navigator.language];
+      for (const rawLang of browserLangs) {
+        if (!rawLang) continue;
+        const normalized = rawLang.split("-")[0].toLowerCase();
+        if (normalized === "es") return "es";
+        if (normalized === "en") return "en";
+        if (normalized === "pt") return "pt";
+        if (normalized === "de") return "de";
+      }
+    }
+    
+    return "es"; // Fallback to Spanish if no matching language is detected
   });
   
   // Voice guided meditation states
@@ -498,6 +516,11 @@ export default function App() {
   const [musicVolume, setMusicVolume] = useState<number>(0.3);
   const [musicPreset, setMusicPreset] = useState<string>("celestial");
   const [isCosmicOffline, setIsCosmicOffline] = useState<boolean>(false);
+  const [isMixerExpanded, setIsMixerExpanded] = useState<boolean>(false);
+  const [isVoiceExpanded, setIsVoiceExpanded] = useState<boolean>(false);
+  const [isPacksExpanded, setIsPacksExpanded] = useState<boolean>(false);
+  const [isLibraryExpanded, setIsLibraryExpanded] = useState<boolean>(false);
+  const isAnyPackPlaying = voicePlaying && MEDITATION_PACKS[language].some(pack => pack.exercises.some(ex => ex.id === activeVoiceMed));
 
   // 1. Calculate and Fetch Moon Phase on Mount
   useEffect(() => {
@@ -766,6 +789,55 @@ export default function App() {
     setTimeout(() => {
       setActiveReminder("");
     }, 7000); // show for 7 seconds
+  };
+
+  // Web Share API & Copy Fallback helper for Sharing readings
+  const handleShareReading = async (title: string, summary: string, extraText?: string) => {
+    const textToShare = `${title}\n\n${summary}${extraText ? `\n\n${extraText}` : ""}`;
+    const shareUrl = window.location.origin;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: textToShare,
+          url: shareUrl,
+        });
+        const successMsg = language === "en" 
+          ? "Reading shared successfully!" 
+          : language === "pt" 
+          ? "Leitura compartilhada com sucesso!" 
+          : "¡Lectura compartida con éxito!";
+        triggerCustomNotification(successMsg);
+      } catch (err: any) {
+        if (err.name !== "AbortError") {
+          fallbackCopyToClipboard(title, textToShare, shareUrl);
+        }
+      }
+    } else {
+      fallbackCopyToClipboard(title, textToShare, shareUrl);
+    }
+  };
+
+  const fallbackCopyToClipboard = (title: string, text: string, url: string) => {
+    const combined = `${text}\n\n${language === "en" ? "Check out your Zen reading here:" : language === "pt" ? "Veja a sua leitura Zen aqui:" : "Mira tu lectura Zen aquí:"} ${url}`;
+    navigator.clipboard.writeText(combined)
+      .then(() => {
+        const copyMsg = language === "en"
+          ? "Copied to clipboard! Share it with your friends."
+          : language === "pt"
+          ? "Copiado para a área de transferência! Compartilhe com seus amigos."
+          : "¡Copiado al portapapeles! Compártelo con tus amigos.";
+        triggerCustomNotification(copyMsg);
+      })
+      .catch(() => {
+        const errMsg = language === "en"
+          ? "Could not copy text automatically. Please select and copy."
+          : language === "pt"
+          ? "Não foi possível copiar o texto automaticamente."
+          : "No se pudo copiar el texto automáticamente.";
+        triggerCustomNotification(errMsg);
+      });
   };
 
   // 6. Tarot Reading Generator
@@ -3307,570 +3379,738 @@ export default function App() {
               />
 
               {/* Relax Music & Ambient Sounds Mixer Panel */}
-              <div id="mezclador-sonidos" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-4 scroll-mt-24">
-                <div>
-                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <Volume2 className="w-4 h-4 text-emerald-400" /> {dict.soundMixer}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {dict.soundMixerDesc}
-                  </p>
+              <div id="mezclador-sonidos" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-4 scroll-mt-24 transition-all duration-300">
+                <div 
+                  onClick={() => setIsMixerExpanded(!isMixerExpanded)}
+                  className="flex justify-between items-center cursor-pointer select-none group"
+                >
+                  <div className="flex-1">
+                    <h3 className="text-lg font-black tracking-wider flex items-center gap-2 group-hover:opacity-90 transition-opacity animate-blink-gold select-none">
+                      <Volume2 className={`w-5 h-5 ${(soundRain || soundWaves || soundBowl || soundBirds || soundBonfire || soundCosmicWind || soundBells || soundMusic) ? "text-amber-400 animate-pulse" : "text-amber-500"}`} /> 
+                      {dict.soundMixer}
+                      {(soundRain || soundWaves || soundBowl || soundBirds || soundBonfire || soundCosmicWind || soundBells || soundMusic) && (
+                        <span className="flex h-2 w-2 relative ml-1">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1 font-medium">
+                      {dict.soundMixerDesc}
+                    </p>
+                    {/* Blinking visual hint so visitors realize they must tap/click to expand/reveal */}
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <span className="text-[10px] bg-amber-500/10 border border-amber-500/25 text-amber-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1.5 shadow-sm shadow-amber-950/20">
+                        <span className="inline-block w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping"></span>
+                        {isMixerExpanded 
+                          ? (language === "en" ? "TAP TO CLOSE ▴" : language === "pt" ? "TOQUE PARA FECHAR ▴" : language === "de" ? "TIPPEN ZUM SCHLIESSEN ▴" : "TOCA PARA CERRAR ▴")
+                          : (language === "en" ? "TAP TO EXPAND & MIX SOUNDS ▾" : language === "pt" ? "TOQUE PARA EXPANDIR E MISTURAR SONS ▾" : language === "de" ? "TIPPEN ZUM ÖFFNEN & SOUNDS MISCHEN ▾" : "TOCA PARA DESPLEGAR Y MEZCLAR SONIDOS ▾")
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 ml-3">
+                    {(soundRain || soundWaves || soundBowl || soundBirds || soundBonfire || soundCosmicWind || soundBells || soundMusic) && !isMixerExpanded && (
+                      <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                        {language === "en" ? "Active" : language === "pt" ? "Ativo" : language === "de" ? "Aktiv" : "Activo"}
+                      </span>
+                    )}
+                    <div className="text-amber-500 group-hover:text-amber-300 transition-colors p-1.5 rounded-lg bg-amber-950/20 border border-amber-900/40 shadow-sm">
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isMixerExpanded ? "rotate-180" : ""}`} />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Mixers Grid */}
-                <div className="flex flex-col gap-4 mt-2">
-                  
-                  {/* Sound 1: Rain */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleRain}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundRain ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundRain ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundRain}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(rainVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={rainVolume}
-                      onChange={(e) => setRainVolume(parseFloat(e.target.value))}
-                      disabled={!soundRain}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
-                  </div>
+                <AnimatePresence initial={false}>
+                  {isMixerExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      {/* Mixers Grid */}
+                      <div className="flex flex-col gap-4 mt-2 pt-4 border-t border-slate-900/40">
+                        
+                        {/* Sound 1: Rain */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleRain}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundRain ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundRain ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundRain}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(rainVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={rainVolume}
+                            onChange={(e) => setRainVolume(parseFloat(e.target.value))}
+                            disabled={!soundRain}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
+                        </div>
 
-                  {/* Sound 2: Ocean Waves */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleWaves}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundWaves ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundWaves ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundWaves}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(wavesVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={wavesVolume}
-                      onChange={(e) => setWavesVolume(parseFloat(e.target.value))}
-                      disabled={!soundWaves}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
-                  </div>
+                        {/* Sound 2: Ocean Waves */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleWaves}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundWaves ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundWaves ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundWaves}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(wavesVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={wavesVolume}
+                            onChange={(e) => setWavesVolume(parseFloat(e.target.value))}
+                            disabled={!soundWaves}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
+                        </div>
 
-                  {/* Sound 3: Singing Bowl */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleBowl}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundBowl ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundBowl ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundBowl}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(bowlVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={bowlVolume}
-                      onChange={(e) => setBowlVolume(parseFloat(e.target.value))}
-                      disabled={!soundBowl}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
-                  </div>
+                        {/* Sound 3: Singing Bowl */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleBowl}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundBowl ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundBowl ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundBowl}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(bowlVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={bowlVolume}
+                            onChange={(e) => setBowlVolume(parseFloat(e.target.value))}
+                            disabled={!soundBowl}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
+                        </div>
 
-                  {/* Sound 4: Forest Birds */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleBirds}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundBirds ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundBirds ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundBirds}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(birdsVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={birdsVolume}
-                      onChange={(e) => setBirdsVolume(parseFloat(e.target.value))}
-                      disabled={!soundBirds}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
-                  </div>
+                        {/* Sound 4: Forest Birds */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleBirds}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundBirds ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundBirds ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundBirds}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(birdsVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={birdsVolume}
+                            onChange={(e) => setBirdsVolume(parseFloat(e.target.value))}
+                            disabled={!soundBirds}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
+                        </div>
 
-                  {/* Sound 5: Bonfire */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleBonfire}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundBonfire ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundBonfire ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundBonfire}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(bonfireVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={bonfireVolume}
-                      onChange={(e) => setBonfireVolume(parseFloat(e.target.value))}
-                      disabled={!soundBonfire}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
-                  </div>
+                        {/* Sound 5: Bonfire */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleBonfire}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundBonfire ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundBonfire ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundBonfire}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(bonfireVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={bonfireVolume}
+                            onChange={(e) => setBonfireVolume(parseFloat(e.target.value))}
+                            disabled={!soundBonfire}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
+                        </div>
 
-                  {/* Sound 6: Cosmic Wind */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleCosmicWind}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundCosmicWind ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundCosmicWind ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundCosmicWind}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(cosmicWindVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={cosmicWindVolume}
-                      onChange={(e) => setCosmicWindVolume(parseFloat(e.target.value))}
-                      disabled={!soundCosmicWind}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
-                  </div>
+                        {/* Sound 6: Cosmic Wind */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleCosmicWind}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundCosmicWind ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundCosmicWind ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundCosmicWind}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(cosmicWindVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={cosmicWindVolume}
+                            onChange={(e) => setCosmicWindVolume(parseFloat(e.target.value))}
+                            disabled={!soundCosmicWind}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
+                        </div>
 
-                  {/* Sound 7: Celestial Bells */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleBells}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundBells ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundBells ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundBells}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(bellsVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={bellsVolume}
-                      onChange={(e) => setBellsVolume(parseFloat(e.target.value))}
-                      disabled={!soundBells}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
-                  </div>
+                        {/* Sound 7: Celestial Bells */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleBells}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundBells ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundBells ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundBells}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(bellsVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={bellsVolume}
+                            onChange={(e) => setBellsVolume(parseFloat(e.target.value))}
+                            disabled={!soundBells}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
+                        </div>
 
-                  {/* Sound 8: Background Music */}
-                  <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
-                    <div className="flex justify-between items-center">
-                      <button
-                        onClick={toggleMusic}
-                        className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                          soundMusic ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
-                        }`}
-                      >
-                        {soundMusic ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                        <span>{dict.soundMusic}</span>
-                      </button>
-                      <span className="text-[10px] font-bold text-slate-500">{Math.round(musicVolume * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={musicVolume}
-                      onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
-                      disabled={!soundMusic}
-                      className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
-                    />
+                        {/* Sound 8: Background Music */}
+                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                          <div className="flex justify-between items-center">
+                            <button
+                              onClick={toggleMusic}
+                              className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                soundMusic ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              {soundMusic ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundMusic}</span>
+                            </button>
+                            <span className="text-[10px] font-bold text-slate-500">{Math.round(musicVolume * 100)}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={musicVolume}
+                            onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
+                            disabled={!soundMusic}
+                            className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
+                          />
 
-                    {/* Music Presets Pill Buttons */}
-                    <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-slate-900/40">
-                      <button
-                        onClick={() => setMusicPreset("celestial")}
-                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                          musicPreset === "celestial"
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                            : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
-                        }`}
-                      >
-                        ✨ Celestial
-                      </button>
-                      <button
-                        onClick={() => setMusicPreset("solfeggio")}
-                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                          musicPreset === "solfeggio"
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                            : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
-                        }`}
-                      >
-                        🎵 528/432Hz
-                      </button>
-                      <button
-                        onClick={() => setMusicPreset("cosmic")}
-                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                          musicPreset === "cosmic"
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                            : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
-                        }`}
-                      >
-                        🌌 Space
-                      </button>
-                      <button
-                        onClick={() => setMusicPreset("pentatonic")}
-                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                          musicPreset === "pentatonic"
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                            : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
-                        }`}
-                      >
-                        🎋 Zen
-                      </button>
-                    </div>
-                  </div>
+                          {/* Music Presets Pill Buttons */}
+                          <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-slate-900/40">
+                            <button
+                              onClick={() => setMusicPreset("celestial")}
+                              className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                                musicPreset === "celestial"
+                                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                              }`}
+                            >
+                              ✨ Celestial
+                            </button>
+                            <button
+                              onClick={() => setMusicPreset("solfeggio")}
+                              className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                                musicPreset === "solfeggio"
+                                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                              }`}
+                            >
+                              🎵 528/432Hz
+                            </button>
+                            <button
+                              onClick={() => setMusicPreset("cosmic")}
+                              className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                                musicPreset === "cosmic"
+                                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                              }`}
+                            >
+                              🌌 Space
+                            </button>
+                            <button
+                              onClick={() => setMusicPreset("pentatonic")}
+                              className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                                musicPreset === "pentatonic"
+                                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                              }`}
+                            >
+                              🎋 Zen
+                            </button>
+                          </div>
+                        </div>
 
-                </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* 🗣️ Voice Guided Meditations Card */}
-              <div id="meditacion-guiada-voz" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-4 scroll-mt-24">
-                <div>
-                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                    <User className="w-4 h-4 text-emerald-400" /> {dict.voiceGuide}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {dict.voiceGuideDesc}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">{dict.voiceMedSession}</span>
-                  
-                  <div className="flex flex-col gap-2">
-                    {dict.voiceMeds.map((med) => (
-                      <button
-                        key={med.id}
-                        onClick={() => {
-                          stopVoiceMeditation();
-                          setActiveVoiceMed(med.id);
-                        }}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          activeVoiceMed === med.id
-                            ? "bg-slate-850/80 border-emerald-500/50 shadow-md shadow-emerald-950/20"
-                            : "bg-slate-950/20 border-slate-900 hover:border-slate-800"
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-bold text-emerald-300">{med.name}</span>
-                          <span className="text-[10px] text-slate-500">VOICE</span>
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{med.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Playback Controls & Subtitle Highlight */}
-                  <div className="mt-2 flex flex-col gap-3 p-3 rounded-2xl bg-emerald-950/10 border border-emerald-900/30">
-                    <button
-                      onClick={startVoiceMeditation}
-                      className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                        voicePlaying
-                          ? "bg-amber-600 hover:bg-amber-500 text-white"
-                          : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/30"
-                      }`}
-                    >
-                      {voicePlaying ? (
-                        <>
-                          <Square className="w-3.5 h-3.5 fill-current" />
-                          <span>{dict.stopVoice}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3.5 h-3.5 fill-current" />
-                          <span>{dict.playVoice}</span>
-                        </>
-                      )}
-                    </button>
-
-                    {/* Active subtitle caption renderer */}
-                    {voicePlaying && activeSentenceIndex >= 0 && (
-                      <div className="mt-1 text-center py-2 px-1">
-                        <span className="text-[9px] text-emerald-400 font-bold tracking-widest uppercase block mb-1">
-                          {dict.playingVoice}
+              <div id="meditacion-guiada-voz" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-4 scroll-mt-24 transition-all duration-300">
+                <div 
+                  onClick={() => setIsVoiceExpanded(!isVoiceExpanded)}
+                  className="flex justify-between items-center cursor-pointer select-none group"
+                >
+                  <div className="flex-1">
+                    <h3 className="text-lg font-black tracking-wider flex items-center gap-2 group-hover:opacity-90 transition-opacity animate-blink-emerald select-none">
+                      <User className={`w-5 h-5 ${voicePlaying ? "text-emerald-400 animate-pulse" : "text-emerald-500"}`} /> 
+                      {dict.voiceGuide}
+                      {voicePlaying && (
+                        <span className="flex h-2 w-2 relative ml-1">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <p className="text-xs italic text-slate-100 font-medium leading-relaxed font-serif animate-pulse">
-                          "{getActiveVoiceScriptSentences()[activeSentenceIndex]}"
-                        </p>
-                      </div>
+                      )}
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1 font-medium">
+                      {dict.voiceGuideDesc}
+                    </p>
+                    {/* Blinking visual hint so visitors realize they must tap/click to expand/reveal */}
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1.5 shadow-sm shadow-emerald-950/20">
+                        <span className="inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span>
+                        {isVoiceExpanded 
+                          ? (language === "en" ? "TAP TO CLOSE ▴" : language === "pt" ? "TOQUE PARA FECHAR ▴" : language === "de" ? "TIPPEN ZUM SCHLIESSEN ▴" : "TOCA PARA CERRAR ▴")
+                          : (language === "en" ? "TAP TO EXPAND & LISTEN ▾" : language === "pt" ? "TOQUE PARA EXPANDIR E OUVIR ▾" : language === "de" ? "TIPPEN ZUM ÖFFNEN & ANHÖREN ▾" : "TOCA PARA DESPLEGAR Y ESCUCHAR ▾")
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 ml-3">
+                    {voicePlaying && !isVoiceExpanded && (
+                      <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                        {language === "en" ? "Playing" : language === "pt" ? "Reproduzindo" : language === "de" ? "Spielt" : "Reproduciendo"}
+                      </span>
                     )}
+                    <div className="text-emerald-500 group-hover:text-emerald-300 transition-colors p-1.5 rounded-lg bg-emerald-950/20 border border-emerald-900/40 shadow-sm">
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isVoiceExpanded ? "rotate-180" : ""}`} />
+                    </div>
                   </div>
                 </div>
+
+                <AnimatePresence initial={false}>
+                  {isVoiceExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-slate-900/40">
+                        <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">{dict.voiceMedSession}</span>
+                        
+                        <div className="flex flex-col gap-2">
+                          {dict.voiceMeds.map((med) => (
+                            <button
+                              key={med.id}
+                              onClick={() => {
+                                stopVoiceMeditation();
+                                setActiveVoiceMed(med.id);
+                              }}
+                              className={`p-3 rounded-xl border text-left transition-all ${
+                                activeVoiceMed === med.id
+                                  ? "bg-slate-850/80 border-emerald-500/50 shadow-md shadow-emerald-950/20"
+                                  : "bg-slate-950/20 border-slate-900 hover:border-slate-800"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-emerald-300">{med.name}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">VOICE</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{med.desc}</p>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Playback Controls & Subtitle Highlight */}
+                        <div className="mt-2 flex flex-col gap-3 p-3 rounded-2xl bg-emerald-950/10 border border-emerald-900/30">
+                          <button
+                            onClick={startVoiceMeditation}
+                            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                              voicePlaying
+                                ? "bg-amber-600 hover:bg-amber-500 text-white"
+                                : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/30"
+                            }`}
+                          >
+                            {voicePlaying ? (
+                              <>
+                                <Square className="w-3.5 h-3.5 fill-current" />
+                                <span>{dict.stopVoice}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                <span>{dict.playVoice}</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Active subtitle caption renderer */}
+                          {voicePlaying && activeSentenceIndex >= 0 && (
+                            <div className="mt-1 text-center py-2 px-1">
+                              <span className="text-[9px] text-emerald-400 font-bold tracking-widest uppercase block mb-1">
+                                {dict.playingVoice}
+                              </span>
+                              <p className="text-xs italic text-slate-100 font-medium leading-relaxed font-serif animate-pulse">
+                                "{getActiveVoiceScriptSentences()[activeSentenceIndex]}"
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
             {/* 🌸 Themed Meditation Packs Section */}
-            <div id="colecciones-tematicas-meditacion" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 scroll-mt-24">
-              <div>
-                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-emerald-400" /> {PACK_LABELS[language].packsTitle}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  {PACK_LABELS[language].packsSubtitle}
-                </p>
-              </div>
-
-              {/* 3 Packs Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {MEDITATION_PACKS[language].map((pack) => {
-                  const isSelected = activePackId === pack.id;
-                  return (
-                    <button
-                      key={pack.id}
-                      onClick={() => {
-                        setActivePackId(pack.id);
-                        setTimeout(() => {
-                          const el = document.getElementById("detalle-coleccion-tematica");
-                          if (el) {
-                            el.scrollIntoView({ behavior: "smooth", block: "start" });
-                          }
-                        }, 100);
-                      }}
-                      className={`text-left p-4 rounded-2xl border transition-all duration-300 flex flex-col gap-3 relative overflow-hidden group ${
-                        isSelected
-                          ? "bg-slate-850/90 border-emerald-500/50 shadow-lg shadow-emerald-950/20 scale-[1.02]"
-                          : "bg-slate-950/20 border-slate-900 hover:border-slate-800 hover:scale-[1.01]"
-                      }`}
-                    >
-                      {/* Colored gradient accent glow */}
-                      <div className={`absolute inset-0 bg-gradient-to-br ${pack.color} opacity-30 group-hover:opacity-45 transition-opacity pointer-events-none`} />
-                      
-                      <div className="relative z-10 flex items-center justify-between">
-                        <div className={`p-2 rounded-xl bg-slate-950/60 ${pack.textColor} border border-slate-800`}>
-                          {pack.icon === "ZapOff" && <ZapOff className="w-4 h-4" />}
-                          {pack.icon === "Moon" && <Moon className="w-4 h-4" />}
-                          {pack.icon === "Sun" && <Sun className="w-4 h-4" />}
-                        </div>
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          7 SESS.
-                        </span>
-                      </div>
-
-                      <div className="relative z-10 mt-1">
-                        <h4 className="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">
-                          {pack.title}
-                        </h4>
-                        <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed line-clamp-3">
-                          {pack.desc}
-                        </p>
-                      </div>
-
-                      {/* Active Selection Indicator */}
-                      {isSelected && (
-                        <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 rounded-bl-lg" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Selected Pack Details and Exercises List */}
-              {(() => {
-                const selectedPack = MEDITATION_PACKS[language].find(p => p.id === activePackId);
-                if (!selectedPack) return null;
-                return (
-                  <div id="detalle-coleccion-tematica" className="bg-slate-950/40 border border-slate-900 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 scroll-mt-24">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-900 pb-3">
-                      <div>
-                        <span className="text-[9px] font-bold text-emerald-400 tracking-wider uppercase">
-                          {PACK_LABELS[language].activePackTitle}
-                        </span>
-                        <h4 className={`text-sm font-bold flex items-center gap-2 ${selectedPack.textColor}`}>
-                          {selectedPack.icon === "ZapOff" && <ZapOff className="w-3.5 h-3.5" />}
-                          {selectedPack.icon === "Moon" && <Moon className="w-3.5 h-3.5" />}
-                          {selectedPack.icon === "Sun" && <Sun className="w-3.5 h-3.5" />}
-                          {selectedPack.title}
-                        </h4>
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          {selectedPack.desc}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-[10px] font-mono text-slate-500 block">
-                          {PACK_LABELS[language].sessionsCount}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Interactive Guided Exercises Grid */}
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mb-1">
-                        {PACK_LABELS[language].startExercise}
+            <div id="colecciones-tematicas-meditacion" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-4 scroll-mt-24 transition-all duration-300">
+              <div 
+                onClick={() => setIsPacksExpanded(!isPacksExpanded)}
+                className="flex justify-between items-center cursor-pointer select-none group"
+              >
+                <div className="flex-1">
+                  <h3 className="text-lg font-black tracking-wider flex items-center gap-2 group-hover:opacity-90 transition-opacity animate-blink-purple select-none">
+                    <Sparkles className={`w-5 h-5 ${isAnyPackPlaying ? "text-purple-400 animate-pulse" : "text-purple-500"}`} /> 
+                    {PACK_LABELS[language].packsTitle}
+                    {isAnyPackPlaying && (
+                      <span className="flex h-2 w-2 relative ml-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
                       </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1 font-medium">
+                    {PACK_LABELS[language].packsSubtitle}
+                  </p>
+                  {/* Blinking visual hint so visitors realize they must tap/click to expand/reveal */}
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <span className="text-[10px] bg-purple-500/10 border border-purple-500/25 text-purple-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1.5 shadow-sm shadow-purple-950/20">
+                      <span className="inline-block w-1.5 h-1.5 bg-purple-400 rounded-full animate-ping"></span>
+                      {isPacksExpanded 
+                        ? (language === "en" ? "TAP TO CLOSE ▴" : language === "pt" ? "TOQUE PARA FECHAR ▴" : language === "de" ? "TIPPEN ZUM SCHLIESSEN ▴" : "TOCA PARA CERRAR ▴")
+                        : (language === "en" ? "TAP TO EXPAND & LISTEN ▾" : language === "pt" ? "TOQUE PARA EXPANDIR E OUVIR ▾" : language === "de" ? "TIPPEN ZUM ÖFFNEN & ANHÖREN ▾" : "TOCA PARA DESPLEGAR Y ESCUCHAR ▾")
+                      }
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 ml-3">
+                  {isAnyPackPlaying && !isPacksExpanded && (
+                    <span className="text-[10px] bg-purple-500/10 border border-purple-500/25 text-purple-400 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                      {language === "en" ? "Playing" : language === "pt" ? "Reproduzindo" : language === "de" ? "Spielt" : "Reproduciendo"}
+                    </span>
+                  )}
+                  <div className="text-purple-500 group-hover:text-purple-300 transition-colors p-1.5 rounded-lg bg-purple-950/20 border border-purple-900/40 shadow-sm">
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isPacksExpanded ? "rotate-180" : ""}`} />
+                  </div>
+                </div>
+              </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {selectedPack.exercises.map((exercise, index) => {
-                          const isCurrentPlaying = activeVoiceMed === exercise.id && voicePlaying;
-                          const isCurrentSelected = activeVoiceMed === exercise.id;
+              <AnimatePresence initial={false}>
+                {isPacksExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex flex-col gap-6 mt-2 pt-4 border-t border-slate-900/40">
+                      {/* 3 Packs Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {MEDITATION_PACKS[language].map((pack) => {
+                          const isSelected = activePackId === pack.id;
                           return (
                             <button
-                              key={exercise.id}
+                              key={pack.id}
                               onClick={() => {
-                                if (isCurrentPlaying) {
-                                  stopVoiceMeditation();
-                                } else {
-                                  stopVoiceMeditation();
-                                  setActiveVoiceMed(exercise.id);
-                                  // Give state a small frame to update activeVoiceMed before starting playback
-                                  setTimeout(() => {
-                                    startVoiceMeditation();
-                                  }, 50);
-                                }
+                                setActivePackId(pack.id);
+                                setTimeout(() => {
+                                  const el = document.getElementById("detalle-coleccion-tematica");
+                                  if (el) {
+                                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                                  }
+                                }, 100);
                               }}
-                              className={`p-3 rounded-xl border text-left transition-all flex items-start gap-3 group relative ${
-                                isCurrentSelected
-                                  ? "bg-slate-900 border-emerald-500/40 shadow-md shadow-emerald-950/30"
-                                  : "bg-slate-950/40 border-slate-900/60 hover:border-slate-850 hover:bg-slate-900/20"
+                              className={`text-left p-4 rounded-2xl border transition-all duration-300 flex flex-col gap-3 relative overflow-hidden group ${
+                                isSelected
+                                  ? "bg-slate-850/90 border-emerald-500/50 shadow-lg shadow-emerald-950/20 scale-[1.02]"
+                                  : "bg-slate-950/20 border-slate-900 hover:border-slate-800 hover:scale-[1.01]"
                               }`}
                             >
-                              {/* Session Index Circle */}
-                              <div className={`w-6 h-6 rounded-lg font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border ${
-                                isCurrentSelected
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                                  : "bg-slate-950 text-slate-500 border-slate-900"
-                              }`}>
-                                {index + 1}
+                              {/* Colored gradient accent glow */}
+                              <div className={`absolute inset-0 bg-gradient-to-br ${pack.color} opacity-30 group-hover:opacity-45 transition-opacity pointer-events-none`} />
+                              
+                              <div className="relative z-10 flex items-center justify-between">
+                                <div className={`p-2 rounded-xl bg-slate-950/60 ${pack.textColor} border border-slate-800`}>
+                                  {pack.icon === "ZapOff" && <ZapOff className="w-4 h-4" />}
+                                  {pack.icon === "Moon" && <Moon className="w-4 h-4" />}
+                                  {pack.icon === "Sun" && <Sun className="w-4 h-4" />}
+                                </div>
+                                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  7 SESS.
+                                </span>
                               </div>
 
-                              <div className="flex-1 min-w-0 pr-6">
-                                <div className="flex items-center gap-1.5">
-                                  <span className={`text-[11px] font-bold truncate ${isCurrentSelected ? "text-emerald-300" : "text-slate-300 group-hover:text-slate-200"}`}>
-                                    {exercise.name}
-                                  </span>
-                                  <span className="text-[8px] font-mono text-slate-500 shrink-0">
-                                    • {exercise.duration}
-                                  </span>
-                                </div>
-                                <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
-                                  {exercise.desc}
+                              <div className="relative z-10 mt-1">
+                                <h4 className="text-xs font-bold text-slate-200 group-hover:text-white transition-colors">
+                                  {pack.title}
+                                </h4>
+                                <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed line-clamp-3">
+                                  {pack.desc}
                                 </p>
                               </div>
 
-                              {/* Dynamic Action/Status Button on right */}
-                              <div className="absolute right-3 top-3.5">
-                                {isCurrentPlaying ? (
-                                  <div className="flex gap-0.5 items-end justify-center h-3 w-4">
-                                    <div className="bg-emerald-400 w-0.5 h-3 animate-pulse rounded-full" />
-                                    <div className="bg-emerald-400 w-0.5 h-1.5 animate-pulse rounded-full [animation-delay:150ms]" />
-                                    <div className="bg-emerald-400 w-0.5 h-2.5 animate-pulse rounded-full [animation-delay:300ms]" />
-                                  </div>
-                                ) : (
-                                  <Play className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
-                                )}
-                              </div>
+                              {/* Active Selection Indicator */}
+                              {isSelected && (
+                                <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 rounded-bl-lg" />
+                              )}
                             </button>
                           );
                         })}
                       </div>
-                    </div>
 
-                    {/* Local subtitle captions panel if the selected active voice meditation belongs to this pack */}
-                    {voicePlaying && activeSentenceIndex >= 0 && selectedPack.exercises.some(ex => ex.id === activeVoiceMed) && (
-                      <div className="mt-2 p-3.5 rounded-xl bg-emerald-950/15 border border-emerald-500/10 flex flex-col items-center text-center">
-                        <span className="text-[9px] text-emerald-400 font-bold tracking-widest uppercase mb-1 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                          {PACK_LABELS[language].nowPlaying}
-                        </span>
-                        <span className="text-[10px] text-emerald-300 font-semibold mb-1">
-                          {selectedPack.exercises.find(ex => ex.id === activeVoiceMed)?.name}
-                        </span>
-                        <p className="text-xs italic text-slate-100 font-medium leading-relaxed font-serif max-w-lg mt-1 animate-pulse">
-                          "{getActiveVoiceScriptSentences()[activeSentenceIndex]}"
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+                      {/* Selected Pack Details and Exercises List */}
+                      {(() => {
+                        const selectedPack = MEDITATION_PACKS[language].find(p => p.id === activePackId);
+                        if (!selectedPack) return null;
+                        return (
+                          <div id="detalle-coleccion-tematica" className="bg-slate-950/40 border border-slate-900 rounded-2xl p-4 sm:p-5 flex flex-col gap-4 scroll-mt-24">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-900 pb-3">
+                              <div>
+                                <span className="text-[9px] font-bold text-emerald-400 tracking-wider uppercase">
+                                  {PACK_LABELS[language].activePackTitle}
+                                </span>
+                                <h4 className={`text-sm font-bold flex items-center gap-2 ${selectedPack.textColor}`}>
+                                  {selectedPack.icon === "ZapOff" && <ZapOff className="w-3.5 h-3.5" />}
+                                  {selectedPack.icon === "Moon" && <Moon className="w-3.5 h-3.5" />}
+                                  {selectedPack.icon === "Sun" && <Sun className="w-3.5 h-3.5" />}
+                                  {selectedPack.title}
+                                </h4>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                  {selectedPack.desc}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-[10px] font-mono text-slate-500 block">
+                                  {PACK_LABELS[language].sessionsCount}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Interactive Guided Exercises Grid */}
+                            <div className="flex flex-col gap-2">
+                              <span className="text-[9px] font-bold text-slate-500 tracking-wider uppercase mb-1">
+                                {PACK_LABELS[language].startExercise}
+                              </span>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {selectedPack.exercises.map((exercise, index) => {
+                                  const isCurrentPlaying = activeVoiceMed === exercise.id && voicePlaying;
+                                  const isCurrentSelected = activeVoiceMed === exercise.id;
+                                  return (
+                                    <button
+                                      key={exercise.id}
+                                      onClick={() => {
+                                        if (isCurrentPlaying) {
+                                          stopVoiceMeditation();
+                                        } else {
+                                          stopVoiceMeditation();
+                                          setActiveVoiceMed(exercise.id);
+                                          // Give state a small frame to update activeVoiceMed before starting playback
+                                          setTimeout(() => {
+                                            startVoiceMeditation();
+                                          }, 50);
+                                        }
+                                      }}
+                                      className={`p-3 rounded-xl border text-left transition-all flex items-start gap-3 group relative ${
+                                        isCurrentSelected
+                                          ? "bg-slate-900 border-emerald-500/40 shadow-md shadow-emerald-950/30"
+                                          : "bg-slate-950/40 border-slate-900/60 hover:border-slate-850 hover:bg-slate-900/20"
+                                      }`}
+                                    >
+                                      {/* Session Index Circle */}
+                                      <div className={`w-6 h-6 rounded-lg font-mono text-[10px] font-bold flex items-center justify-center shrink-0 border ${
+                                        isCurrentSelected
+                                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                          : "bg-slate-950 text-slate-500 border-slate-900"
+                                      }`}>
+                                        {index + 1}
+                                      </div>
+
+                                      <div className="flex-1 min-w-0 pr-6">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className={`text-[11px] font-bold truncate ${isCurrentSelected ? "text-emerald-300" : "text-slate-300 group-hover:text-slate-200"}`}>
+                                            {exercise.name}
+                                          </span>
+                                          <span className="text-[8px] font-mono text-slate-500 shrink-0">
+                                            • {exercise.duration}
+                                          </span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed line-clamp-2">
+                                          {exercise.desc}
+                                        </p>
+                                      </div>
+
+                                      {/* Dynamic Action/Status Button on right */}
+                                      <div className="absolute right-3 top-3.5">
+                                        {isCurrentPlaying ? (
+                                          <div className="flex gap-0.5 items-end justify-center h-3 w-4">
+                                            <div className="bg-emerald-400 w-0.5 h-3 animate-pulse rounded-full" />
+                                            <div className="bg-emerald-400 w-0.5 h-1.5 animate-pulse rounded-full [animation-delay:150ms]" />
+                                            <div className="bg-emerald-400 w-0.5 h-2.5 animate-pulse rounded-full [animation-delay:300ms]" />
+                                          </div>
+                                        ) : (
+                                          <Play className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+                                        )}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Local subtitle captions panel if the selected active voice meditation belongs to this pack */}
+                            {voicePlaying && activeSentenceIndex >= 0 && selectedPack.exercises.some(ex => ex.id === activeVoiceMed) && (
+                              <div className="mt-2 p-3.5 rounded-xl bg-emerald-950/15 border border-emerald-500/10 flex flex-col items-center text-center">
+                                <span className="text-[9px] text-emerald-400 font-bold tracking-widest uppercase mb-1 flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                  {PACK_LABELS[language].nowPlaying}
+                                </span>
+                                <span className="text-[10px] text-emerald-300 font-semibold mb-1">
+                                  {selectedPack.exercises.find(ex => ex.id === activeVoiceMed)?.name}
+                                </span>
+                                <p className="text-xs italic text-slate-100 font-medium leading-relaxed font-serif max-w-lg mt-1 animate-pulse">
+                                  "{getActiveVoiceScriptSentences()[activeSentenceIndex]}"
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* 📚 Blog & Articles Section */}
-            <div id="blog-inicio" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 scroll-mt-24 mt-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-emerald-400" /> {dict.libTitle}
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  {dict.libDesc}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                {MINDFULNESS_ARTICLES_LOCALIZED[language].map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => handleExpandArticle(item.title)}
-                    className="bg-slate-900/40 border border-slate-900/60 rounded-3xl p-5 hover:bg-slate-900/60 hover:border-emerald-500/20 transition-all cursor-pointer flex flex-col gap-4 group animate-fade-in"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-slate-950/80 border border-slate-900 flex items-center justify-center text-2xl group-hover:scale-105 transition-all select-none">
-                      {item.emoji}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">MINDFULNESS</h4>
-                      <h3 className="text-sm font-bold text-slate-200 mt-1.5 leading-snug group-hover:text-slate-100 transition-all">
-                        {item.title}
-                      </h3>
-                      <p className="text-[11px] text-slate-400 leading-relaxed mt-2 font-medium line-clamp-3">
-                        {item.summary}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold text-emerald-500 group-hover:underline mt-2">{dict.libReadMore}</span>
+            <div id="blog-inicio" className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-4 scroll-mt-24 mt-4 transition-all duration-300">
+              <div 
+                onClick={() => setIsLibraryExpanded(!isLibraryExpanded)}
+                className="flex justify-between items-center cursor-pointer select-none group"
+              >
+                <div className="flex-1">
+                  <h3 className="text-lg font-black tracking-wider flex items-center gap-2 group-hover:opacity-90 transition-opacity animate-blink-rose select-none">
+                    <BookOpen className="w-5 h-5 text-rose-500" /> 
+                    {dict.libTitle}
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1 font-medium">
+                    {dict.libDesc}
+                  </p>
+                  {/* Blinking visual hint so visitors realize they must tap/click to expand/reveal */}
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <span className="text-[10px] bg-rose-500/10 border border-rose-500/25 text-rose-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1.5 shadow-sm shadow-rose-950/20">
+                      <span className="inline-block w-1.5 h-1.5 bg-rose-400 rounded-full animate-ping"></span>
+                      {isLibraryExpanded 
+                        ? (language === "en" ? "TAP TO CLOSE ▴" : language === "pt" ? "TOQUE PARA FECHAR ▴" : language === "de" ? "TIPPEN ZUM SCHLIESSEN ▴" : "TOCA PARA CERRAR ▴")
+                        : (language === "en" ? "TAP TO EXPAND & READ ▾" : language === "pt" ? "TOQUE PARA EXPANDIR E LER ▾" : language === "de" ? "TIPPEN ZUM ÖFFNEN & LESEN ▾" : "TOCA PARA DESPLEGAR Y LEER ▾")
+                      }
+                    </span>
                   </div>
-                ))}
+                </div>
+                <div className="flex items-center gap-2.5 ml-3">
+                  <div className="text-rose-500 group-hover:text-rose-300 transition-colors p-1.5 rounded-lg bg-rose-950/20 border border-rose-900/40 shadow-sm">
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isLibraryExpanded ? "rotate-180" : ""}`} />
+                  </div>
+                </div>
               </div>
 
+              <AnimatePresence initial={false}>
+                {isLibraryExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex flex-col gap-6 mt-2 pt-4 border-t border-slate-900/40">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        {MINDFULNESS_ARTICLES_LOCALIZED[language].map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={() => handleExpandArticle(item.title)}
+                            className="bg-slate-900/40 border border-slate-900/60 rounded-3xl p-5 hover:bg-slate-900/60 hover:border-emerald-500/20 transition-all cursor-pointer flex flex-col gap-4 group animate-fade-in"
+                          >
+                            <div className="w-12 h-12 rounded-2xl bg-slate-950/80 border border-slate-900 flex items-center justify-center text-2xl group-hover:scale-105 transition-all select-none">
+                              {item.emoji}
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">MINDFULNESS</h4>
+                              <h3 className="text-sm font-bold text-slate-200 mt-1.5 leading-snug group-hover:text-slate-100 transition-all">
+                                {item.title}
+                              </h3>
+                              <p className="text-[11px] text-slate-400 leading-relaxed mt-2 font-medium line-clamp-3">
+                                {item.summary}
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-500 group-hover:underline mt-2">{dict.libReadMore}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* ✍️ Guestbook (Libro de Visitas) Section */}
@@ -4365,6 +4605,21 @@ export default function App() {
                         {language === "en" ? "Export as PDF" : language === "pt" ? "Exportar como PDF" : language === "de" ? "Als PDF exportieren" : "Exportar como PDF"}
                       </span>
                     </button>
+                    <button
+                      onClick={() => {
+                        const title = language === "en" ? "Therapeutic Tarot Reading" : language === "pt" ? "Leitura de Tarot Terapêutico" : "Lectura de Tarot Terapéutico";
+                        const extra = `${language === "en" ? "Drawn Cards" : language === "pt" ? "Cartas Reveladas" : "Arcanos Revelados"}:\n` + 
+                          (tarotReading.interpretations?.map((item: any) => `- ${item.positionName}: ${item.cardName}`).join("\n") || "") + 
+                          (tarotReading.advice ? `\n\n${language === "en" ? "Advice" : language === "pt" ? "Conselho" : "Consejo"}: ${tarotReading.advice}` : "");
+                        handleShareReading(title, tarotReading.summary, extra);
+                      }}
+                      className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 hover:border-blue-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>
+                        {language === "en" ? "Share Reading" : language === "pt" ? "Compartilhar" : "Compartir Lectura"}
+                      </span>
+                    </button>
                   </div>
                 </div>
 
@@ -4610,6 +4865,21 @@ export default function App() {
                         {language === "en" ? "Export as PDF" : language === "pt" ? "Exportar como PDF" : language === "de" ? "Als PDF exportieren" : "Exportar como PDF"}
                       </span>
                     </button>
+                    <button
+                      onClick={() => {
+                        const title = language === "en" ? "Ancestral Runes Reading" : language === "pt" ? "Leitura de Runas Ancestrais" : "Lectura de Runas Ancestrales";
+                        const extra = `${language === "en" ? "Drawn Runes" : language === "pt" ? "Runas Reveladas" : "Runas Reveladas"}:\n` + 
+                          (runesReading.interpretations?.map((item: any) => `- ${item.positionName}: ${item.runeName}`).join("\n") || "") + 
+                          (runesReading.advice ? `\n\n${language === "en" ? "Advice" : language === "pt" ? "Conselho" : "Consejo"}: ${runesReading.advice}` : "");
+                        handleShareReading(title, runesReading.summary, extra);
+                      }}
+                      className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 hover:border-blue-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer self-start sm:self-center shrink-0"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      <span>
+                        {language === "en" ? "Share Reading" : language === "pt" ? "Compartilhar" : "Compartir Lectura"}
+                      </span>
+                    </button>
                   </div>
                 </div>
 
@@ -4812,6 +5082,20 @@ export default function App() {
                       <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       <span>
                         {language === "en" ? "Export PDF" : language === "pt" ? "Exportar PDF" : language === "de" ? "PDF Exportieren" : "Exportar PDF"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const title = language === "en" ? `Tree of Life Alignment: ${treeReading.activeSefirah?.name || ""}` : language === "pt" ? `Alinhamento da Árvore da Vida: ${treeReading.activeSefirah?.name || ""}` : `Alineación del Árbol de la Vida: ${treeReading.activeSefirah?.name || ""}`;
+                        const extra = `${language === "en" ? "Blessing" : language === "pt" ? "Bênção" : "Bendición"}: "${treeReading.blessing || ""}"` +
+                          (treeReading.kabbalisticMeditation ? `\n\n${language === "en" ? "Kabbalistic Meditation" : language === "pt" ? "Meditação Cabalística" : "Meditación Cabalística"}: ${treeReading.kabbalisticMeditation.title || ""}` : "");
+                        handleShareReading(title, treeReading.alignmentExplanation || "", extra);
+                      }}
+                      className="px-3.5 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/20 hover:border-blue-500/40 rounded-xl text-[11px] font-bold uppercase transition-all duration-300 flex items-center gap-2 select-none cursor-pointer hover:scale-[1.02]"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <span>
+                        {language === "en" ? "Share" : language === "pt" ? "Compartilhar" : "Compartir"}
                       </span>
                     </button>
                   </div>
@@ -5448,6 +5732,20 @@ export default function App() {
                           <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                           <span>
                             {language === "en" ? "Export PDF" : language === "pt" ? "Exportar PDF" : language === "de" ? "PDF Exportieren" : "Exportar PDF"}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const title = language === "en" ? `Angelic Guidance: ${angelsReading.angelName || ""}` : language === "pt" ? `Orientação Angélica: ${angelsReading.angelName || ""}` : `Mensaje Celestial: ${angelsReading.angelName || ""}`;
+                            const extra = `${language === "en" ? "Affirmation" : language === "pt" ? "Afirmação" : "Afirmación"}: "${angelsReading.affirmation || ""}"` +
+                              (angelsReading.crystal ? `\n${language === "en" ? "Crystal" : language === "pt" ? "Cristal" : "Cristal"}: ${angelsReading.crystal}` : "");
+                            handleShareReading(title, angelsReading.coreMessage || "", extra);
+                          }}
+                          className="px-3.5 py-1.5 bg-blue-500/15 hover:bg-blue-500/25 text-blue-300 border border-blue-500/20 hover:border-blue-500/40 rounded-xl text-[11px] font-bold uppercase transition-all duration-300 flex items-center gap-2 select-none cursor-pointer hover:scale-[1.02]"
+                        >
+                          <Share2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                          <span>
+                            {language === "en" ? "Share" : language === "pt" ? "Compartilhar" : "Compartir"}
                           </span>
                         </button>
                       </div>
