@@ -39,6 +39,7 @@ import { MEDITATION_PACKS, PACK_LABELS } from "./meditationPacks";
 import { TwinkleText } from "./components/TwinkleText";
 import { AstrologyTab } from "./components/AstrologyTab";
 import { MetricsTab } from "./components/MetricsTab";
+import { DailyJournal } from "./components/DailyJournal";
 import { ZenVisualizer } from "./components/ZenVisualizer";
 import { BoxBreathingGuide } from "./components/BoxBreathingGuide";
 import { KabbalahGuide } from "./components/KabbalahGuide";
@@ -49,6 +50,8 @@ import { exportReadingAsPdf } from "./utils/exportPdf";
 import kabbalahTreeOfLifeImg from "./assets/images/kabbalah_tree_of_life_1782922797280.jpg";
 // @ts-ignore
 import zenMeditationImg from "./assets/images/zen_medit_red_1783213377427.jpg";
+// @ts-ignore
+import momentosZenLogoImg from "./assets/images/momentos_zen_logo_1782864863812.jpg";
 
 function MovingDigit() {
   const [val, setVal] = useState<number>(() => Math.floor(Math.random() * 10));
@@ -2549,9 +2552,30 @@ export default function App() {
             className="flex items-center gap-3 cursor-pointer select-none hover:opacity-90 active:scale-95 transition-all"
             title={language === "es" ? "Volver al Inicio" : language === "en" ? "Go to Home" : language === "pt" ? "Ir para o Início" : "Zur Startseite"}
           >
-            <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
-              <span className="text-lg">🧘</span>
-            </div>
+            <motion.div
+              className="w-14 h-14 rounded-full bg-slate-900 border-2 border-emerald-500/40 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+              animate={{
+                scale: [1, 1.15, 1],
+                y: [0, -6, 0],
+                boxShadow: [
+                  "0 0 10px rgba(16, 185, 129, 0.2), inset 0 0 5px rgba(16, 185, 129, 0.1)",
+                  "0 0 25px rgba(16, 185, 129, 0.6), inset 0 0 12px rgba(16, 185, 129, 0.3)",
+                  "0 0 10px rgba(16, 185, 129, 0.2), inset 0 0 5px rgba(16, 185, 129, 0.1)"
+                ]
+              }}
+              transition={{
+                duration: 4.5,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <img
+                src={zenMeditationImg}
+                alt="Respiración Zen"
+                className="w-full h-full object-cover rounded-full"
+                referrerPolicy="no-referrer"
+              />
+            </motion.div>
             <div>
               <h1 className="font-serif text-base sm:text-xl font-bold tracking-wide text-slate-100 flex items-center gap-1.5">
                 <TwinkleText text={dict.title} glowColor="rgba(249, 168, 37, 0.5)" />
@@ -2625,7 +2649,7 @@ export default function App() {
         </div>
 
         {/* Navigation Tabs - Arranged in EXACTLY two lines with a grid layout for elegant visibility without scrolling */}
-        <nav className="grid grid-cols-4 gap-1 sm:gap-1.5 bg-slate-950/85 p-1 rounded-xl border border-slate-900 shadow-2xl w-full max-w-4xl mx-auto">
+        <nav className="grid grid-cols-4 sm:grid-cols-5 gap-1 sm:gap-1.5 bg-slate-950/85 p-1 rounded-xl border border-slate-900 shadow-2xl w-full max-w-4xl mx-auto">
             <button
               onClick={() => {
                 setActiveTab("inicio");
@@ -2639,7 +2663,7 @@ export default function App() {
                   }
                 }, 100);
               }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "inicio"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2652,7 +2676,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("tarot"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "tarot"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2665,7 +2689,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("runas"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "runas"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2678,7 +2702,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("cabal"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "cabal"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2691,7 +2715,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("numerologia"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "numerologia"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2704,7 +2728,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("astrology"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "astrology"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2717,7 +2741,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("angels"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "angels"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2730,7 +2754,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("biblioteca"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "biblioteca"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2743,7 +2767,7 @@ export default function App() {
             </button>
             <button
               onClick={() => { setActiveTab("metrics"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "metrics"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
@@ -2752,6 +2776,19 @@ export default function App() {
               <TwinkleText
                 text={language === "en" ? "Metrics" : language === "de" ? "Metriken" : language === "pt" ? "Métricas" : "Métricas"}
                 glowColor={activeTab === "metrics" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
+              />
+            </button>
+            <button
+              onClick={() => { setActiveTab("diario"); setExpandedArticle(null); }}
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+                activeTab === "diario"
+                  ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
+                  : "border border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <TwinkleText
+                text={language === "en" ? "Journal" : language === "pt" ? "Diário" : language === "de" ? "Tagebuch" : "Diario"}
+                glowColor={activeTab === "diario" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
               />
             </button>
         </nav>
@@ -5596,6 +5633,11 @@ export default function App() {
         {/* TAB: TELEMETRY & METRICS DASHBOARD */}
         {activeTab === "metrics" && (
           <MetricsTab language={language} />
+        )}
+
+        {/* TAB: DAILY SPIRITUAL JOURNAL */}
+        {activeTab === "diario" && (
+          <DailyJournal language={language} />
         )}
 
         {/* TAB 7: ORACLE OF THE ANGELS OF LIGHT & INTEGRATED PROGRESS/STATS */}

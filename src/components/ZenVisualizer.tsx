@@ -26,6 +26,54 @@ interface ZenVisualizerProps {
 
 type VisualizerMode = "mandala" | "waves" | "particles";
 
+const SOUND_THEMES = {
+  rain: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(14, 116, 144, 0.35) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(6, 182, 212, 0.35)",
+    shadow: "rgba(6, 182, 212, 0.2)"
+  },
+  waves: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 118, 110, 0.35) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(20, 184, 166, 0.35)",
+    shadow: "rgba(20, 184, 166, 0.2)"
+  },
+  bowl: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(180, 83, 9, 0.3) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(245, 158, 11, 0.35)",
+    shadow: "rgba(245, 158, 11, 0.2)"
+  },
+  birds: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(161, 98, 7, 0.3) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(234, 179, 8, 0.35)",
+    shadow: "rgba(234, 179, 8, 0.2)"
+  },
+  bonfire: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(194, 65, 12, 0.35) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(249, 115, 22, 0.35)",
+    shadow: "rgba(249, 115, 22, 0.2)"
+  },
+  cosmicWind: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(67, 56, 202, 0.35) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(99, 102, 241, 0.35)",
+    shadow: "rgba(99, 102, 241, 0.2)"
+  },
+  bells: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(109, 40, 217, 0.35) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(139, 92, 246, 0.35)",
+    shadow: "rgba(139, 92, 246, 0.2)"
+  },
+  music: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(4, 120, 87, 0.35) 50%, rgba(15, 23, 42, 0.8) 100%)",
+    border: "rgba(16, 185, 129, 0.35)",
+    shadow: "rgba(16, 185, 129, 0.2)"
+  },
+  default: {
+    bgGradient: "linear-gradient(135deg, rgba(15, 23, 42, 0.4) 0%, rgba(30, 41, 59, 0.2) 50%, rgba(15, 23, 42, 0.4) 100%)",
+    border: "rgba(30, 41, 59, 0.6)",
+    shadow: "rgba(16, 185, 129, 0.05)"
+  }
+};
+
 export function ZenVisualizer({
   language,
   soundRain,
@@ -51,6 +99,25 @@ export function ZenVisualizer({
   const [mode, setMode] = useState<VisualizerMode>("mandala");
   const [sensitivity, setSensitivity] = useState<number>(1.2);
   const [syncBreathe, setSyncBreathe] = useState<boolean>(true);
+
+  // Determine the dominant active sound profile based on state and volume
+  const activeList = [
+    { id: "rain", active: soundRain, vol: rainVolume },
+    { id: "waves", active: soundWaves, vol: wavesVolume },
+    { id: "bowl", active: soundBowl, vol: bowlVolume },
+    { id: "birds", active: soundBirds, vol: birdsVolume },
+    { id: "bonfire", active: soundBonfire, vol: bonfireVolume },
+    { id: "cosmicWind", active: soundCosmicWind, vol: cosmicWindVolume },
+    { id: "bells", active: soundBells, vol: bellsVolume },
+    { id: "music", active: soundMusic, vol: musicVolume },
+  ].filter(s => s.active);
+
+  const dominant = activeList.length > 0 
+    ? activeList.reduce((prev, curr) => curr.vol > prev.vol ? curr : prev, activeList[0]).id
+    : "default";
+
+  const currentTheme = SOUND_THEMES[dominant as keyof typeof SOUND_THEMES] || SOUND_THEMES.default;
+
   
   // Local dimensions state (to react to ResizeObserver)
   const [dimensions, setDimensions] = useState({ width: 300, height: 220 });
@@ -682,8 +749,25 @@ export function ZenVisualizer({
   const activeChannels = [soundRain, soundWaves, soundBowl, soundBirds, soundBonfire, soundCosmicWind, soundBells, soundMusic].filter(Boolean).length;
 
   return (
-    <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-4 w-full" id="zen-visualizer-container">
-      <div className="flex justify-between items-start">
+    <div 
+      className="relative overflow-hidden rounded-3xl p-6 flex flex-col gap-4 w-full border transition-all duration-1000 ease-in-out shadow-xl" 
+      id="zen-visualizer-container"
+      style={{
+        borderColor: currentTheme.border,
+        boxShadow: `0 10px 30px -10px ${currentTheme.shadow}`,
+      }}
+    >
+      {/* Animated and hue-shifting background layer */}
+      <div 
+        className="absolute inset-0 z-0 animate-zen-bg opacity-90 transition-all duration-1000 ease-in-out"
+        style={{
+          background: currentTheme.bgGradient,
+        }}
+      />
+      
+      {/* Content wrapper to stay above background and keep clean non-shifted colors */}
+      <div className="relative z-10 flex flex-col gap-4 w-full">
+        <div className="flex justify-between items-start">
         <div>
           <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
             <Activity className="w-4 h-4 text-emerald-400" /> {t.title}
@@ -818,6 +902,7 @@ export function ZenVisualizer({
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

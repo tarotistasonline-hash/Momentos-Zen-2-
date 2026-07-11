@@ -190,4 +190,25 @@ p, li, .leading-relaxed, .markdown-body p {
   text-justify: inter-word;
 }
 
+@keyframes zenBgGlow {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(-20deg);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(20deg);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(-20deg);
+  }
+}
+
+.animate-zen-bg {
+  background-size: 200% 200%;
+  animation: zenBgGlow 18s infinite ease-in-out;
+}
+
+
 
