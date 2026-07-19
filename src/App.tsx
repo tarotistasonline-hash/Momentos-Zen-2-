@@ -32,6 +32,7 @@ import {
   Image,
   Download,
   Coffee,
+  Music,
   Share2,
 } from "lucide-react";
 import { DICTIONARY, MINDFULNESS_ARTICLES_LOCALIZED, VOICE_SCRIPTS } from "./dictionary";
@@ -40,12 +41,16 @@ import { TwinkleText } from "./components/TwinkleText";
 import { AstrologyTab } from "./components/AstrologyTab";
 import { MetricsTab } from "./components/MetricsTab";
 import { DailyJournal } from "./components/DailyJournal";
+import { AkashicRecords } from "./components/AkashicRecords";
+import { DreamInterpretation } from "./components/DreamInterpretation";
+import { AstralTravel } from "./components/AstralTravel";
 import { ZenVisualizer } from "./components/ZenVisualizer";
 import { BoxBreathingGuide } from "./components/BoxBreathingGuide";
 import { KabbalahGuide } from "./components/KabbalahGuide";
 import TreeOfLifeVisualizer from "./components/TreeOfLifeVisualizer";
 import { exportReadingAsImage } from "./utils/exportImage";
 import { exportReadingAsPdf } from "./utils/exportPdf";
+import { IntentionSanctuary } from "./components/IntentionSanctuary";
 // @ts-ignore
 import kabbalahTreeOfLifeImg from "./assets/images/kabbalah_tree_of_life_1782922797280.jpg";
 // @ts-ignore
@@ -148,8 +153,33 @@ const getParticleColor = (state: string, active: boolean, index: number) => {
   }
 };
 
+const readingItemVariants = {
+  hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    filter: "blur(0px)",
+    transition: { duration: 0.7, ease: "easeOut" } 
+  }
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("inicio");
+  const [fontSize, setFontSize] = useState<"default" | "large" | "xlarge">(() => {
+    const saved = safeLocalStorage.getItem("zen_font_size");
+    return (saved as any) || "default";
+  });
+
+  useEffect(() => {
+    const htmlEl = document.documentElement;
+    htmlEl.classList.remove("font-size-large", "font-size-xlarge");
+    if (fontSize === "large") {
+      htmlEl.classList.add("font-size-large");
+    } else if (fontSize === "xlarge") {
+      htmlEl.classList.add("font-size-xlarge");
+    }
+    safeLocalStorage.setItem("zen_font_size", fontSize);
+  }, [fontSize]);
   const [language, setLanguage] = useState<"es" | "en" | "pt" | "de">(() => {
     const saved = safeLocalStorage.getItem("zen_language");
     if (saved && (saved === "es" || saved === "en" || saved === "pt" || saved === "de")) {
@@ -285,6 +315,9 @@ export default function App() {
   const coffeeRef = useRef<HTMLDivElement>(null);
   const [langDropdownOpen, setLangDropdownOpen] = useState<boolean>(false);
   const langDropdownRef = useRef<HTMLDivElement>(null);
+  const [musicDropdownOpen, setMusicDropdownOpen] = useState<boolean>(false);
+  const musicDropdownRef = useRef<HTMLDivElement>(null);
+  const [musicTurnedOff, setMusicTurnedOff] = useState<boolean>(false);
 
   // Reading Speech Synthesis States
   const [readingSpeechText, setReadingSpeechText] = useState<string | null>(null);
@@ -421,6 +454,9 @@ export default function App() {
       if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
         setLangDropdownOpen(false);
       }
+      if (musicDropdownRef.current && !musicDropdownRef.current.contains(event.target as Node)) {
+        setMusicDropdownOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -534,7 +570,7 @@ export default function App() {
   const [soundBonfire, setSoundBonfire] = useState<boolean>(false);
   const [soundCosmicWind, setSoundCosmicWind] = useState<boolean>(false);
   const [soundBells, setSoundBells] = useState<boolean>(false);
-  const [soundMusic, setSoundMusic] = useState<boolean>(false);
+  const [soundMusic, setSoundMusic] = useState<boolean>(true);
 
   const [rainVolume, setRainVolume] = useState<number>(0.3);
   const [wavesVolume, setWavesVolume] = useState<number>(0.3);
@@ -552,6 +588,140 @@ export default function App() {
   const [isLibraryExpanded, setIsLibraryExpanded] = useState<boolean>(false);
   const [isDailyExpanded, setIsDailyExpanded] = useState<boolean>(false);
   const isAnyPackPlaying = voicePlaying && MEDITATION_PACKS[language].some(pack => pack.exercises.some(ex => ex.id === activeVoiceMed));
+
+  // Global Toast Notifications state
+  interface ToastItem {
+    id: string;
+    message: string;
+    type: "success" | "info" | "warning";
+  }
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [mixerTab, setMixerTab] = useState<"mezclador" | "paisajes">("mezclador");
+
+  const showToast = (message: string, type: "success" | "info" | "warning" = "success") => {
+    const id = Date.now().toString() + Math.random().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4500);
+  };
+
+  const applySoundscape = (preset: "rainforest" | "midnight_zen" | "campfires" | "cosmic" | "ocean") => {
+    initAudioContext();
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+
+    // Determine targets
+    let playRain = false;
+    let playWaves = false;
+    let playBowl = false;
+    let playBirds = false;
+    let playBonfire = false;
+    let playCosmicWind = false;
+    let playBells = false;
+    let playMusic = false;
+
+    let targetRain = 0.3;
+    let targetWaves = 0.3;
+    let targetBowl = 0.3;
+    let targetBirds = 0.3;
+    let targetBonfire = 0.3;
+    let targetCosmicWind = 0.3;
+    let targetBells = 0.3;
+    let targetMusic = 0.3;
+    let mType = "celestial";
+
+    if (preset === "rainforest") {
+      playRain = true;
+      targetRain = 0.45;
+      playBirds = true;
+      targetBirds = 0.6;
+      playCosmicWind = true;
+      targetCosmicWind = 0.2;
+    } else if (preset === "midnight_zen") {
+      playBowl = true;
+      targetBowl = 0.55;
+      playBells = true;
+      targetBells = 0.45;
+      playCosmicWind = true;
+      targetCosmicWind = 0.25;
+      playMusic = true;
+      targetMusic = 0.4;
+      mType = "solfeggio";
+    } else if (preset === "campfires") {
+      playBonfire = true;
+      targetBonfire = 0.65;
+      playBirds = true;
+      targetBirds = 0.35;
+      playRain = true;
+      targetRain = 0.25;
+    } else if (preset === "cosmic") {
+      playCosmicWind = true;
+      targetCosmicWind = 0.65;
+      playBells = true;
+      targetBells = 0.5;
+      playBowl = true;
+      targetBowl = 0.4;
+      playMusic = true;
+      targetMusic = 0.5;
+      mType = "cosmic";
+    } else if (preset === "ocean") {
+      playWaves = true;
+      targetWaves = 0.65;
+      playBells = true;
+      targetBells = 0.35;
+      playBowl = true;
+      targetBowl = 0.3;
+    }
+
+    // Set volumes first (so they are applied immediately if turned on)
+    setRainVolume(targetRain);
+    setWavesVolume(targetWaves);
+    setBowlVolume(targetBowl);
+    setBirdsVolume(targetBirds);
+    setBonfireVolume(targetBonfire);
+    setCosmicWindVolume(targetCosmicWind);
+    setBellsVolume(targetBells);
+    setMusicVolume(targetMusic);
+    setMusicPreset(mType);
+
+    // Synchronize play states
+    if (playRain && !soundRain) toggleRain();
+    if (!playRain && soundRain) toggleRain();
+
+    if (playWaves && !soundWaves) toggleWaves();
+    if (!playWaves && soundWaves) toggleWaves();
+
+    if (playBowl && !soundBowl) toggleBowl();
+    if (!playBowl && soundBowl) toggleBowl();
+
+    if (playBirds && !soundBirds) toggleBirds();
+    if (!playBirds && soundBirds) toggleBirds();
+
+    if (playBonfire && !soundBonfire) toggleBonfire();
+    if (!playBonfire && soundBonfire) toggleBonfire();
+
+    if (playCosmicWind && !soundCosmicWind) toggleCosmicWind();
+    if (!playCosmicWind && soundCosmicWind) toggleCosmicWind();
+
+    if (playBells && !soundBells) toggleBells();
+    if (!playBells && soundBells) toggleBells();
+
+    if (playMusic && !soundMusic) toggleMusic();
+    if (!playMusic && soundMusic) toggleMusic();
+
+    // Trigger toast notification
+    const pName = preset === "rainforest" ? (language === "en" ? "Rainforest" : "Selva Lluviosa")
+                : preset === "midnight_zen" ? (language === "en" ? "Midnight Zen" : "Zen de Medianoche")
+                : preset === "campfires" ? (language === "en" ? "Campfire Tales" : "Fogata Nocturna")
+                : preset === "cosmic" ? (language === "en" ? "Cosmic Voyage" : "Viaje Cósmico")
+                : (language === "en" ? "Sacred Ocean" : "Océano Sagrado");
+
+    triggerCustomNotification(
+      language === "en" ? `Soundscape "${pName}" activated successfully!` : `¡Paisaje sonoro "${pName}" activado con éxito!`,
+      "success"
+    );
+  };
 
   // 1. Calculate and Fetch Moon Phase on Mount
   useEffect(() => {
@@ -815,8 +985,9 @@ export default function App() {
   };
 
   // 5. Custom Notification Generator
-  const triggerCustomNotification = (message: string) => {
+  const triggerCustomNotification = (message: string, type: "success" | "info" | "warning" = "success") => {
     setActiveReminder(message);
+    showToast(message, type);
     setTimeout(() => {
       setActiveReminder("");
     }, 7000); // show for 7 seconds
@@ -1519,15 +1690,43 @@ export default function App() {
     }
   };
 
+  // Play Zen music by default upon first user interaction
+  useEffect(() => {
+    let started = false;
+    const startMusicOnGesture = () => {
+      if (started) return;
+      if (soundMusic && !musicTurnedOff) {
+        initAudioContext();
+        startMusicInternal(musicPreset);
+        started = true;
+      }
+      // Remove listeners
+      window.removeEventListener("click", startMusicOnGesture);
+      window.removeEventListener("touchstart", startMusicOnGesture);
+      window.removeEventListener("mousedown", startMusicOnGesture);
+      window.removeEventListener("keydown", startMusicOnGesture);
+    };
+
+    window.addEventListener("click", startMusicOnGesture);
+    window.addEventListener("touchstart", startMusicOnGesture);
+    window.addEventListener("mousedown", startMusicOnGesture);
+    window.addEventListener("keydown", startMusicOnGesture);
+
+    return () => {
+      window.removeEventListener("click", startMusicOnGesture);
+      window.removeEventListener("touchstart", startMusicOnGesture);
+      window.removeEventListener("mousedown", startMusicOnGesture);
+      window.removeEventListener("keydown", startMusicOnGesture);
+    };
+  }, [soundMusic, musicPreset, musicTurnedOff]);
+
   // Generate procedural loopable Ambient Background Music with customizable presets
   const toggleMusic = () => {
     if (soundMusic) {
       stopMusicInternal();
       setSoundMusic(false);
-    } else {
-      stopAllAmbientSounds();
-      startMusicInternal(musicPreset);
-      setSoundMusic(true);
+      setMusicTurnedOff(true);
+      setMusicDropdownOpen(false);
     }
   };
 
@@ -2535,13 +2734,21 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#070110] text-slate-100 flex flex-col font-sans relative overflow-hidden">
+      {/* Iridescent Purple Glowing Background Blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] rounded-full bg-purple-600/15 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '10s' }} />
+      <div className="absolute top-[30%] right-[-15%] w-[60vw] h-[60vw] rounded-full bg-fuchsia-600/12 blur-[150px] pointer-events-none animate-pulse" style={{ animationDuration: '14s' }} />
+      <div className="absolute bottom-[15%] left-[-10%] w-[55vw] h-[55vw] rounded-full bg-cyan-500/8 blur-[130px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }} />
+      <div className="absolute bottom-[-10%] right-[10%] w-[60vw] h-[60vw] rounded-full bg-purple-500/15 blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
+      
+      {/* Mesh/Iridescent shimmer overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,_rgba(168,85,247,0.18),_rgba(255,255,255,0))] pointer-events-none" />
       
       {/* 1. Header Area with Prominent, Accessible Translator */}
-      <header className="relative md:sticky md:top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-900 py-3.5 px-4 sm:px-6 flex flex-col gap-3.5">
+      <header className="relative md:sticky md:top-0 z-50 bg-[#090214]/85 backdrop-blur-md border-b border-purple-950/40 py-3.5 px-4 sm:px-6 flex flex-col gap-3.5">
         
         {/* Top Bar: Title & Beautiful Prominent Language Switcher */}
-        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-900/60 pb-3">
+        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-purple-950/30 pb-3">
           
           <div 
             onClick={() => {
@@ -2555,16 +2762,17 @@ export default function App() {
             <motion.div
               className="w-14 h-14 rounded-full bg-slate-900 border-2 border-emerald-500/40 flex items-center justify-center shrink-0 overflow-hidden shadow-[0_0_15px_rgba(16,185,129,0.3)]"
               animate={{
-                scale: [1, 1.15, 1],
-                y: [0, -6, 0],
+                y: [0, -8, 0],
+                rotate: [0, 4, -4, 0],
+                scale: [1, 1.05, 1],
                 boxShadow: [
-                  "0 0 10px rgba(16, 185, 129, 0.2), inset 0 0 5px rgba(16, 185, 129, 0.1)",
-                  "0 0 25px rgba(16, 185, 129, 0.6), inset 0 0 12px rgba(16, 185, 129, 0.3)",
-                  "0 0 10px rgba(16, 185, 129, 0.2), inset 0 0 5px rgba(16, 185, 129, 0.1)"
+                  "0 0 12px rgba(16, 185, 129, 0.3), inset 0 0 6px rgba(16, 185, 129, 0.15)",
+                  "0 0 28px rgba(16, 185, 129, 0.75), inset 0 0 14px rgba(16, 185, 129, 0.35)",
+                  "0 0 12px rgba(16, 185, 129, 0.3), inset 0 0 6px rgba(16, 185, 129, 0.15)"
                 ]
               }}
               transition={{
-                duration: 4.5,
+                duration: 5,
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
@@ -2588,8 +2796,179 @@ export default function App() {
             </div>
           </div>
 
-          {/* Vertical Dropdown Language Selector ("Pestaña Desplegable Vertical") */}
-          <div className="relative shrink-0" ref={langDropdownRef}>
+          {/* Header Controls (Font Size & Language Selector & Zen Music) */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Global Zen Music Controller */}
+            <div className="relative shrink-0" ref={musicDropdownRef}>
+              <button
+                disabled={musicTurnedOff}
+                onClick={() => {
+                  if (!musicTurnedOff) {
+                    setMusicDropdownOpen(!musicDropdownOpen);
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all duration-200 text-[10px] font-bold uppercase select-none ${
+                  soundMusic && !musicTurnedOff
+                    ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.2)] cursor-pointer hover:bg-emerald-900/40"
+                    : "bg-slate-900/40 border-slate-800/80 text-slate-500 cursor-not-allowed opacity-40"
+                }`}
+                title={
+                  musicTurnedOff
+                    ? (language === "es"
+                        ? "Música Zen Apagada"
+                        : language === "en"
+                        ? "Zen Music Turned Off"
+                        : language === "pt"
+                        ? "Música Zen Desativada"
+                        : "Zen-Musik Aus")
+                    : (language === "es"
+                        ? "Música Zen de Fondo"
+                        : language === "en"
+                        ? "Background Zen Music"
+                        : language === "pt"
+                        ? "Música Zen de Fundo"
+                        : "Zen-Hintergrundmusik")
+                }
+              >
+                <motion.div
+                  animate={soundMusic && !musicTurnedOff ? { rotate: 360 } : { rotate: 0 }}
+                  transition={soundMusic && !musicTurnedOff ? { repeat: Infinity, duration: 8, ease: "linear" } : { duration: 0.3 }}
+                  className="flex items-center justify-center shrink-0"
+                >
+                  <Music className={`w-3.5 h-3.5 ${soundMusic && !musicTurnedOff ? "text-emerald-400" : "text-slate-500"}`} />
+                </motion.div>
+                <span className="tracking-wider">
+                  {musicTurnedOff
+                    ? (language === "es"
+                        ? "Apagada"
+                        : language === "en"
+                        ? "Muted"
+                        : language === "pt"
+                        ? "Desativada"
+                        : "Aus")
+                    : (language === "es"
+                        ? "Música Zen"
+                        : language === "en"
+                        ? "Zen Music"
+                        : language === "pt"
+                        ? "Música Zen"
+                        : "Zen-Musik")}
+                </span>
+                {soundMusic && !musicTurnedOff && (
+                  <span className="inline-flex items-center gap-0.5 ml-0.5">
+                    <span className="w-0.5 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                    <span className="w-0.5 h-3 bg-emerald-400 rounded-full animate-pulse [animation-delay:150ms]" />
+                    <span className="w-0.5 h-1.5 bg-emerald-400 rounded-full animate-pulse [animation-delay:300ms]" />
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {musicDropdownOpen && !musicTurnedOff && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 4, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 top-full z-[100] mt-1 w-60 bg-slate-950/95 border border-slate-800 rounded-2xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.6)] p-4 flex flex-col gap-3.5 backdrop-blur-md"
+                  >
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-900/60">
+                      <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                        {language === "es" ? "Música de Fondo" : "Background Music"}
+                      </span>
+                      <button
+                        onClick={toggleMusic}
+                        className="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all bg-red-500/20 text-red-300 border border-red-500/30 hover:bg-red-500/30 cursor-pointer"
+                      >
+                        {language === "es" ? "Apagar" : "Off"}
+                      </button>
+                    </div>
+
+                    {/* Volume slider */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between text-[9px] font-bold text-slate-500">
+                        <span>{language === "es" ? "VOLUMEN" : "VOLUME"}</span>
+                        <span>{Math.round(musicVolume * 100)}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={musicVolume}
+                        onChange={(e) => {
+                          const newVol = parseFloat(e.target.value);
+                          setMusicVolume(newVol);
+                        }}
+                        className="w-full accent-emerald-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Preset selector */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[9px] font-bold text-slate-500 tracking-wider">
+                        {language === "es" ? "atmósfera espiritual" : "spiritual atmosphere"}
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {[
+                          { id: "celestial", label_es: "Celestial", label_en: "Celestial" },
+                          { id: "solfeggio", label_es: "Solfeggio", label_en: "Solfeggio" },
+                          { id: "cosmic", label_es: "Cósmico", label_en: "Cosmic" },
+                          { id: "pentatonic", label_es: "Pentatónica", label_en: "Pentatonic" },
+                        ].map((preset) => (
+                          <button
+                            key={preset.id}
+                            onClick={() => {
+                              setMusicPreset(preset.id);
+                            }}
+                            className={`px-2 py-1.5 rounded-xl text-[9px] font-bold transition-all border ${
+                              musicPreset === preset.id && soundMusic
+                                ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
+                                : "bg-slate-900 border-slate-900 text-slate-400 hover:text-slate-200"
+                            }`}
+                          >
+                            {language === "es" ? preset.label_es : preset.label_en}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Font Size Selector button */}
+            <button
+              onClick={() => {
+                setFontSize((prev) => {
+                  if (prev === "default") return "large";
+                  if (prev === "large") return "xlarge";
+                  return "default";
+                });
+              }}
+              className="flex items-center gap-1.5 bg-slate-900/60 hover:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 text-slate-300 transition-all duration-200 shadow-md hover:border-amber-500/30 text-[10px] font-bold uppercase select-none cursor-pointer"
+              title={
+                language === "es"
+                  ? "Cambiar tamaño de letra"
+                  : language === "en"
+                  ? "Change font size"
+                  : language === "pt"
+                  ? "Alterar tamanho da fonte"
+                  : "Schriftgröße ändern"
+              }
+            >
+              <span className="text-xs font-serif font-black text-amber-400">aA</span>
+              <span className="text-[9px] tracking-wider text-slate-200">
+                {fontSize === "default"
+                  ? (language === "es" ? "Normal" : language === "en" ? "Default" : language === "pt" ? "Padrão" : "Standard")
+                  : fontSize === "large"
+                  ? (language === "es" ? "Grande" : language === "en" ? "Large" : "Groß")
+                  : (language === "es" ? "Extra G" : language === "en" ? "Extra L" : "Extra G")}
+              </span>
+            </button>
+
+            {/* Vertical Dropdown Language Selector ("Pestaña Desplegable Vertical") */}
+            <div className="relative shrink-0" ref={langDropdownRef}>
             <button
               onClick={() => setLangDropdownOpen(!langDropdownOpen)}
               className="flex items-center gap-2 bg-slate-900/60 hover:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-300 transition-all duration-200 shadow-md hover:border-amber-500/30 text-xs font-bold uppercase select-none cursor-pointer"
@@ -2645,11 +3024,12 @@ export default function App() {
               )}
             </AnimatePresence>
           </div>
+          </div>
 
         </div>
 
         {/* Navigation Tabs - Arranged in EXACTLY two lines with a grid layout for elegant visibility without scrolling */}
-        <nav className="grid grid-cols-4 sm:grid-cols-5 gap-1 sm:gap-1.5 bg-slate-950/85 p-1 rounded-xl border border-slate-900 shadow-2xl w-full max-w-4xl mx-auto">
+        <nav className="grid grid-cols-4 sm:grid-cols-6 gap-1 sm:gap-1.5 bg-slate-950/85 p-1 rounded-xl border border-slate-900 shadow-2xl w-full max-w-4xl mx-auto">
             <button
               onClick={() => {
                 setActiveTab("inicio");
@@ -2740,19 +3120,6 @@ export default function App() {
               />
             </button>
             <button
-              onClick={() => { setActiveTab("angels"); setExpandedArticle(null); }}
-              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
-                activeTab === "angels"
-                  ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
-                  : "border border-transparent text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <TwinkleText
-                text={dict.tabProgress}
-                glowColor={activeTab === "angels" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
-              />
-            </button>
-            <button
               onClick={() => { setActiveTab("biblioteca"); setExpandedArticle(null); }}
               className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
                 activeTab === "biblioteca"
@@ -2779,34 +3146,96 @@ export default function App() {
               />
             </button>
             <button
-              onClick={() => { setActiveTab("diario"); setExpandedArticle(null); }}
+              onClick={() => { setActiveTab("akashic"); setExpandedArticle(null); }}
               className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
-                activeTab === "diario"
+                activeTab === "akashic"
                   ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
                   : "border border-transparent text-slate-400 hover:text-slate-200"
               }`}
             >
               <TwinkleText
-                text={language === "en" ? "Journal" : language === "pt" ? "Diário" : language === "de" ? "Tagebuch" : "Diario"}
-                glowColor={activeTab === "diario" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
+                text={language === "en" ? "Akashic" : language === "pt" ? "Akasha" : language === "de" ? "Akasha" : "Akashic"}
+                glowColor={activeTab === "akashic" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
+              />
+            </button>
+            <button
+              onClick={() => { setActiveTab("dreams"); setExpandedArticle(null); }}
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+                activeTab === "dreams"
+                  ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
+                  : "border border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <TwinkleText
+                text={language === "en" ? "Dream Interpretation" : language === "pt" ? "Int. de Sonhos" : language === "de" ? "Traumdeutung" : "Interpretación Sueños"}
+                glowColor={activeTab === "dreams" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
+              />
+            </button>
+            <button
+              onClick={() => { setActiveTab("astral"); setExpandedArticle(null); }}
+              className={`px-1 py-2 sm:py-2.5 rounded-lg font-serif text-[10.5px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-normal transition-all duration-300 relative overflow-hidden flex items-center justify-center min-w-0 text-center select-none ${
+                activeTab === "astral"
+                  ? "bg-emerald-950/45 border border-amber-500/35 text-amber-300 shadow-lg shadow-amber-950/45"
+                  : "border border-transparent text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <TwinkleText
+                text={language === "en" ? "Astral Travel" : language === "pt" ? "Viagem Astral" : language === "de" ? "Astralreise" : "Viajes Astrales"}
+                glowColor={activeTab === "astral" ? "rgba(251, 191, 36, 0.75)" : "rgba(16, 185, 129, 0.15)"}
               />
             </button>
         </nav>
       </header>
 
-      {/* On-screen Mindfulness Reminder Alert Banner */}
-      {activeReminder && (
-        <div className="fixed bottom-6 right-6 left-6 sm:left-auto z-50 bg-gradient-to-r from-emerald-900 to-indigo-950 border border-emerald-500/30 text-emerald-100 px-5 py-4 rounded-2xl shadow-2xl flex items-start gap-3 max-w-sm animate-bounce">
-          <Bell className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-xs font-bold tracking-wider text-amber-300">RECORDATORIO ZEN</h4>
-            <p className="text-sm mt-1 leading-relaxed font-semibold">{activeReminder}</p>
-          </div>
-        </div>
-      )}
+      {/* Global Toast Stack */}
+      <div className="fixed bottom-6 right-6 left-6 sm:left-auto z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9, y: -10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className={`p-4 rounded-xl border shadow-xl flex items-start gap-3 pointer-events-auto backdrop-blur-md ${
+                toast.type === "success"
+                  ? "bg-emerald-950/90 border-emerald-500/35 text-emerald-100 shadow-emerald-950/20"
+                  : toast.type === "warning"
+                  ? "bg-amber-950/90 border-amber-500/35 text-amber-100 shadow-amber-950/20"
+                  : "bg-slate-950/90 border-slate-800 text-slate-200"
+              }`}
+            >
+              <div className="shrink-0 mt-0.5">
+                {toast.type === "success" ? (
+                  <CheckCircle className="w-5 h-5 text-emerald-400 animate-pulse" />
+                ) : toast.type === "warning" ? (
+                  <Info className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Bell className="w-5 h-5 text-purple-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {toast.type === "success" ? "Acción Completada" : toast.type === "warning" ? "Atención" : "Aviso Zen"}
+                </h4>
+                <p className="text-xs sm:text-sm mt-0.5 leading-relaxed font-semibold">{toast.message}</p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* Main Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto pt-3 px-4 pb-6 sm:pt-4 sm:px-6 flex flex-col gap-5">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab + (expandedArticle ? "-expanded" : "")}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="w-full flex flex-col gap-5"
+          >
 
         {/* Beautiful Offline Spiritual Mode Status Banner */}
         {isCosmicOffline && (
@@ -3512,10 +3941,117 @@ export default function App() {
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="overflow-hidden"
+                      className="overflow-hidden bg-slate-950/20 rounded-2xl p-1"
                     >
-                      {/* Mixers Grid */}
-                      <div className="flex flex-col gap-4 mt-2 pt-4 border-t border-slate-900/40">
+                      {/* Sub-tabs for Mixer Panel */}
+                      <div className="flex gap-2 p-1 bg-slate-950/70 border border-slate-950 rounded-xl mt-3">
+                        <button
+                          type="button"
+                          onClick={() => setMixerTab("mezclador")}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            mixerTab === "mezclador"
+                              ? "bg-emerald-950/40 border border-emerald-500/25 text-emerald-300 shadow-sm"
+                              : "text-slate-400 hover:text-slate-200 border border-transparent"
+                          }`}
+                        >
+                          {language === "en" ? "Volume Mixer" : language === "pt" ? "Misturador" : "Mezclador de Sonidos"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setMixerTab("paisajes")}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            mixerTab === "paisajes"
+                              ? "bg-emerald-950/40 border border-emerald-500/25 text-emerald-300 shadow-sm"
+                              : "text-slate-400 hover:text-slate-200 border border-transparent"
+                          }`}
+                        >
+                          ✨ {language === "en" ? "Soundscapes" : language === "pt" ? "Ambientes" : "Paisajes Sonoros"}
+                        </button>
+                      </div>
+
+                      {mixerTab === "paisajes" ? (
+                        <div className="flex flex-col gap-3 mt-4 pt-2 px-1 pb-4">
+                          {[
+                            {
+                              id: "rainforest",
+                              name: language === "en" ? "Rainforest" : "Selva Lluviosa",
+                              desc: language === "en" ? "Gentle persistent rain, wild bird songs, and soft whispering wind." : "Lluvia persistent con cantos de aves silvestres y viento suave.",
+                              icon: "🍃",
+                              color: "from-emerald-950/60 to-teal-950/60",
+                              active: soundRain && soundBirds && soundCosmicWind && !soundWaves && !soundBowl && !soundBonfire && !soundBells
+                            },
+                            {
+                              id: "midnight_zen",
+                              name: language === "en" ? "Midnight Zen" : "Zen de Medianoche",
+                              desc: language === "en" ? "Tibetan singing bowls and bells submerged in deep Solfeggio resonance." : "Gong tibetano y campanas astrales sumergidos en resonancia profunda Solfeggio.",
+                              icon: "🧘",
+                              color: "from-indigo-950/60 to-purple-950/60",
+                              active: soundBowl && soundBells && soundCosmicWind && soundMusic && musicPreset === "solfeggio" && !soundRain && !soundWaves && !soundBirds && !soundBonfire
+                            },
+                            {
+                              id: "campfires",
+                              name: language === "en" ? "Campfire Tales" : "Fogata Nocturna",
+                              desc: language === "en" ? "Crackling wood fire surrounded by gentle evening drizzle and birds." : "Fuego crujiente de fogata rodeado de llovizna suave de bosque y aves nocturnas.",
+                              icon: "🔥",
+                              color: "from-amber-950/60 to-red-950/60",
+                              active: soundBonfire && soundBirds && soundRain && !soundWaves && !soundBowl && !soundCosmicWind && !soundBells && !soundMusic
+                            },
+                            {
+                              id: "cosmic",
+                              name: language === "en" ? "Cosmic Voyage" : "Viaje Cósmico",
+                              desc: language === "en" ? "Deep stellar cosmic wind, celestial bells, and deep space ambient music." : "Viento estelar profundo, campanas celestiales y música ambiental de espacio sideral.",
+                              icon: "🌌",
+                              color: "from-purple-950/60 to-slate-950/60",
+                              active: soundCosmicWind && soundBells && soundBowl && soundMusic && musicPreset === "cosmic" && !soundRain && !soundWaves && !soundBirds && !soundBonfire
+                            },
+                            {
+                              id: "ocean",
+                              name: language === "en" ? "Sacred Ocean" : "Océano Sagrado",
+                              desc: language === "en" ? "Rhythmic ocean waves synchronized with astral bells and ancient singing bowls." : "Olas de océano rítmicas sintonizadas con campanas astrales y gongs ancestrales.",
+                              icon: "🌊",
+                              color: "from-cyan-950/60 to-blue-950/60",
+                              active: soundWaves && soundBells && soundBowl && !soundRain && !soundBirds && !soundBonfire && !soundCosmicWind && !soundMusic
+                            }
+                          ].map((scape) => (
+                            <button
+                              key={scape.id}
+                              type="button"
+                              onClick={() => applySoundscape(scape.id as any)}
+                              className={`group w-full text-left p-3.5 rounded-2xl border text-slate-100 transition-all duration-300 relative overflow-hidden bg-gradient-to-r ${scape.color} ${
+                                scape.active
+                                  ? "border-emerald-500/50 shadow-md shadow-emerald-950/45"
+                                  : "border-slate-800/60 hover:border-slate-700 hover:scale-[1.01]"
+                              }`}
+                            >
+                              <div className="flex gap-3 items-center relative z-10">
+                                <span className="text-2xl select-none">{scape.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="text-sm font-serif font-black text-amber-100 group-hover:text-amber-300 transition-colors">
+                                      {scape.name}
+                                    </h4>
+                                    {scape.active ? (
+                                      <span className="text-[9px] bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                                        {language === "en" ? "Active" : "Activo"}
+                                      </span>
+                                    ) : (
+                                      <span className="text-[9px] text-slate-500 border border-slate-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                        {language === "en" ? "Preset" : "Ajuste"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                                    {scape.desc}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="absolute top-0 right-0 w-16 h-16 bg-white/2 rounded-full blur-xl pointer-events-none group-hover:bg-white/5 transition-all duration-500"></div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-4 mt-2 pt-4 border-t border-slate-900/40">
                         
                         {/* Sound 1: Rain */}
                         <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
@@ -3700,16 +4236,23 @@ export default function App() {
                         </div>
 
                         {/* Sound 8: Background Music */}
-                        <div className="flex flex-col gap-1.5 p-3 rounded-2xl bg-slate-950/30 border border-slate-900/60">
+                        <div className={`flex flex-col gap-1.5 p-3 rounded-2xl border transition-all ${
+                          musicTurnedOff
+                            ? "bg-slate-950/10 border-slate-950 text-slate-600 opacity-40"
+                            : "bg-slate-950/30 border-slate-900/60"
+                        }`}>
                           <div className="flex justify-between items-center">
                             <button
+                              disabled={musicTurnedOff}
                               onClick={toggleMusic}
                               className={`text-xs font-bold transition-all flex items-center gap-1.5 ${
-                                soundMusic ? "text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                                soundMusic && !musicTurnedOff
+                                  ? "text-emerald-400 cursor-pointer hover:text-emerald-300"
+                                  : "text-slate-500 cursor-not-allowed"
                               }`}
                             >
-                              {soundMusic ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                              <span>{dict.soundMusic}</span>
+                              {soundMusic && !musicTurnedOff ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                              <span>{dict.soundMusic} {musicTurnedOff && `(${language === "es" ? "Apagada" : "Off"})`}</span>
                             </button>
                             <span className="text-[10px] font-bold text-slate-500">{Math.round(musicVolume * 100)}%</span>
                           </div>
@@ -3720,48 +4263,52 @@ export default function App() {
                             step="0.05"
                             value={musicVolume}
                             onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
-                            disabled={!soundMusic}
+                            disabled={!soundMusic || musicTurnedOff}
                             className="w-full accent-emerald-500 bg-slate-800/40 h-1 rounded-lg appearance-none cursor-pointer disabled:opacity-40"
                           />
 
                           {/* Music Presets Pill Buttons */}
                           <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-slate-900/40">
                             <button
+                              disabled={musicTurnedOff}
                               onClick={() => setMusicPreset("celestial")}
                               className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                                musicPreset === "celestial"
+                                musicPreset === "celestial" && !musicTurnedOff
                                   ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
                               }`}
                             >
                               ✨ Celestial
                             </button>
                             <button
+                              disabled={musicTurnedOff}
                               onClick={() => setMusicPreset("solfeggio")}
                               className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                                musicPreset === "solfeggio"
+                                musicPreset === "solfeggio" && !musicTurnedOff
                                   ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
                               }`}
                             >
                               🎵 528/432Hz
                             </button>
                             <button
+                              disabled={musicTurnedOff}
                               onClick={() => setMusicPreset("cosmic")}
                               className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                                musicPreset === "cosmic"
+                                musicPreset === "cosmic" && !musicTurnedOff
                                   ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
                               }`}
                             >
                               🌌 Space
                             </button>
                             <button
+                              disabled={musicTurnedOff}
                               onClick={() => setMusicPreset("pentatonic")}
                               className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                                musicPreset === "pentatonic"
+                                musicPreset === "pentatonic" && !musicTurnedOff
                                   ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
-                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                                  : "border-slate-800/60 text-slate-400 hover:text-slate-200 hover:border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
                               }`}
                             >
                               🎋 Zen
@@ -3770,6 +4317,7 @@ export default function App() {
                         </div>
 
                       </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -4482,8 +5030,117 @@ export default function App() {
                 )}
               </AnimatePresence>
             </div>
+
+          {/* PROGRESS, STATISTICS, AND RECORDINGS HISTORY */}
+          <div className="border-t border-slate-900/60 pt-8 flex flex-col gap-8 mt-10">
+            
+            {/* Configuration / Mood notifications toggle card */}
+            <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-6 flex flex-col gap-5">
+              <div>
+                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-emerald-400" /> Configuración de Conciencia
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Establece un intervalo de atención plena para recordarte hacer pausas sagradas.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-between bg-slate-950/40 p-4 rounded-2xl border border-slate-900">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-amber-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-200">Recordatorios de Atención Plena</h4>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      {language === "en" ? "Periodic mindfulness messages" : language === "pt" ? "Mensagens periódicas de atenção plena" : "Mensajes de atención plena periódicos"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <select
+                    value={reminderInterval}
+                    onChange={(e) => setReminderInterval(parseInt(e.target.value))}
+                    className="bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:outline-none"
+                  >
+                    <option value={1}>Cada 1 hora</option>
+                    <option value={4}>Cada 4 horas</option>
+                    <option value={8}>Cada 8 horas</option>
+                  </select>
+
+                  <button
+                    onClick={() => {
+                      setRemindersEnabled(!remindersEnabled);
+                      if (!remindersEnabled) triggerCustomNotification("¡Recordatorios Zen activados! Nos mantendremos conectados.");
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      remindersEnabled ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/40" : "bg-slate-800 text-slate-400"
+                    }`}
+                  >
+                    {remindersEnabled ? "Habilitados" : "Deshabilitados"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Statistics Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
+                <span className="text-[10px] font-bold text-slate-500 tracking-wider">RACHA DIARIA</span>
+                <div className="text-3xl font-serif font-black text-amber-400 mt-1">{streak}</div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Días seguidos</span>
+              </div>
+
+              <div className="p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
+                <span className="text-[10px] font-bold text-slate-500 tracking-wider">RESPIRACIÓN</span>
+                <div className="text-3xl font-serif font-black text-emerald-400 mt-1">🧘 {minutesMeditated}M</div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Minutos totales</span>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1 p-4 bg-slate-900/40 border border-slate-900 rounded-3xl text-center">
+                <span className="text-[10px] font-bold text-slate-500 tracking-wider">TAREAS DIARIAS</span>
+                <div className="text-3xl font-serif font-black text-indigo-400 mt-1">
+                  ✅ {Object.values(completedActions).filter(Boolean).length}
+                </div>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">Acciones completadas</span>
+              </div>
+            </div>
+
+            {/* Readings History Logs */}
+            <div className="flex flex-col gap-4">
+              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-emerald-400" /> Diario de Lecturas & Consultas
+              </h3>
+              <p className="text-xs text-slate-400">
+                Lista histórica de tus lecturas de Tarot, Runas, Ángeles y Numerología para recordar tus consejos espirituales del pasado.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                {readingsHistory.length === 0 ? (
+                  <div className="p-6 bg-slate-900/10 border border-slate-900/60 rounded-3xl text-center text-xs text-slate-500 font-semibold italic">
+                    {language === "en" ? "You haven't saved any readings yet. Perform a query to begin!" : language === "pt" ? "Você ainda não salvou nenhuma consulta. Faça uma consulta para começar!" : "Aún no has guardado ninguna lectura. ¡Realiza una consulta para comenzar!"}
+                  </div>
+                ) : (
+                  readingsHistory.map((record) => (
+                    <div key={record.id} className="p-4 bg-slate-950/40 border border-slate-900 rounded-2xl flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-[10px] font-bold">
+                        <span className="text-emerald-400 uppercase tracking-widest">{record.type}</span>
+                        <span className="text-slate-500">{record.date}</span>
+                      </div>
+                      <h4 className="text-xs font-bold text-slate-200">Pregunta: "{record.query}"</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">
+                        {record.summary}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
           </div>
-        )}
+        </div>
+      )}
 
         {/* TAB 2: TAROT DE MARSELLA */}
         {activeTab === "tarot" && (
@@ -4641,8 +5298,22 @@ export default function App() {
 
             {/* Reading Results */}
             {tarotReading && (
-              <div className="bg-slate-900/20 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 animate-fade-in">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.15,
+                      delayChildren: 0.1
+                    }
+                  }
+                }}
+                initial="hidden"
+                animate="visible"
+                className="bg-slate-900/20 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6"
+              >
+                <motion.div variants={readingItemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <span className="text-[10px] font-bold tracking-widest text-amber-400 uppercase">
                       {language === "en" ? "READING REPORT" : language === "pt" ? "RELATÓRIO DA LEITURA" : "INFORME DE LA LECTURA"}
@@ -4705,14 +5376,14 @@ export default function App() {
                       </span>
                     </button>
                   </div>
-                </div>
+                </motion.div>
 
-                <p className="text-xs text-slate-300 leading-relaxed font-semibold">
+                <motion.p variants={readingItemVariants} className="text-xs text-slate-300 leading-relaxed font-semibold">
                   {tarotReading.summary}
-                </p>
+                </motion.p>
 
                 {/* Cards Drawn list with descriptions */}
-                <div className="flex flex-col gap-3">
+                <motion.div variants={readingItemVariants} className="flex flex-col gap-3">
                   <h4 className="text-[10px] font-bold text-slate-400 tracking-wider">ARCANOS REVELADOS</h4>
                   <div className="flex flex-col gap-3">
                     {tarotReading.interpretations?.map((item: any, i: number) => {
@@ -4736,16 +5407,16 @@ export default function App() {
                       );
                     })}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Integrated Advice */}
-                <div className="p-5 bg-gradient-to-br from-amber-950/15 to-slate-950/50 border border-amber-500/20 rounded-2xl flex flex-col gap-2">
+                <motion.div variants={readingItemVariants} className="p-5 bg-gradient-to-br from-amber-950/15 to-slate-950/50 border border-amber-500/20 rounded-2xl flex flex-col gap-2">
                   <span className="text-[10px] font-bold text-amber-400 tracking-wider">EL CONSEJO DE HOY</span>
                   <p className="text-xs text-slate-300 leading-relaxed font-semibold">
                     {tarotReading.advice}
                   </p>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
           </div>
         )}
@@ -4903,8 +5574,22 @@ export default function App() {
 
             {/* Runes Reading Results */}
             {runesReading && (
-              <div className="bg-slate-900/20 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6 animate-fade-in">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.15,
+                      delayChildren: 0.1
+                    }
+                  }
+                }}
+                initial="hidden"
+                animate="visible"
+                className="bg-slate-900/20 border border-slate-900 rounded-3xl p-6 flex flex-col gap-6"
+              >
+                <motion.div variants={readingItemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <span className="text-[10px] font-bold tracking-widest text-purple-400 uppercase">MENSAJE DEL FUTHARK</span>
                     <h2 className="font-serif text-lg font-bold text-slate-100 mt-1">
@@ -4965,14 +5650,14 @@ export default function App() {
                       </span>
                     </button>
                   </div>
-                </div>
+                </motion.div>
 
-                <p className="text-xs text-slate-300 leading-relaxed font-semibold">
+                <motion.p variants={readingItemVariants} className="text-xs text-slate-300 leading-relaxed font-semibold">
                   {runesReading.summary}
-                </p>
+                </motion.p>
 
                 {/* Runes details */}
-                <div className="flex flex-col gap-3">
+                <motion.div variants={readingItemVariants} className="flex flex-col gap-3">
                   <h4 className="text-[10px] font-bold text-slate-400 tracking-wider">SÍMBOLOS REVELADOS</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {runesReading.interpretations?.map((item: any, i: number) => {
@@ -4993,16 +5678,16 @@ export default function App() {
                       );
                     })}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Runes advice */}
-                <div className="p-5 bg-gradient-to-br from-purple-950/15 to-slate-950/50 border border-purple-500/20 rounded-2xl flex flex-col gap-2">
+                <motion.div variants={readingItemVariants} className="p-5 bg-gradient-to-br from-purple-950/15 to-slate-950/50 border border-purple-500/20 rounded-2xl flex flex-col gap-2">
                   <span className="text-[10px] font-bold text-purple-400 tracking-wider">CONSEJO DE SABIDURÍA NÓRDICA</span>
                   <p className="text-xs text-slate-300 leading-relaxed font-semibold">
                     {runesReading.advice}
                   </p>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
           </div>
         )}
@@ -5635,13 +6320,23 @@ export default function App() {
           <MetricsTab language={language} />
         )}
 
-        {/* TAB: DAILY SPIRITUAL JOURNAL */}
-        {activeTab === "diario" && (
-          <DailyJournal language={language} />
+        {/* TAB: REGISTROS AKASHICOS */}
+        {activeTab === "akashic" && (
+          <AkashicRecords language={language} showToast={triggerCustomNotification} />
         )}
 
-        {/* TAB 7: ORACLE OF THE ANGELS OF LIGHT & INTEGRATED PROGRESS/STATS */}
-        {activeTab === "angels" && (
+        {/* TAB: INTERPRETACION DE SUENOS */}
+        {activeTab === "dreams" && (
+          <DreamInterpretation language={language} showToast={triggerCustomNotification} />
+        )}
+
+        {/* TAB: VIAJES ASTRALES */}
+        {activeTab === "astral" && (
+          <AstralTravel language={language} showToast={triggerCustomNotification} />
+        )}
+
+        {/* TAB 7: ORACLE OF THE ANGELS OF LIGHT & INTEGRATED PROGRESS/STATS (DEPRECATED) */}
+        {false && (
           <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
             {/* Title Block */}
             <div className="text-center flex flex-col items-center gap-2">
@@ -6001,120 +6696,119 @@ export default function App() {
           </div>
         )}
 
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Footer / Copyright credits */}
-      <footer className="bg-slate-950 border-t border-slate-900/60 py-6 text-center text-[11px] text-slate-500 font-medium flex flex-col items-center justify-center gap-2">
+      <footer className="bg-[#05010b]/90 border-t border-purple-950/40 py-6 text-center text-[11px] text-slate-500 font-medium flex flex-col items-center justify-center gap-2">
         <p className="tracking-wide">© 2026 Momentos Zen · Tu Refugio Espiritual</p>
         <p className="text-slate-600 mt-1">Conectando la sabiduría ancestral y la inteligencia artificial para guiar tu paz interior.</p>
         
-        {/* Cafecito / Gratitude Section */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-3 bg-slate-900/40 px-6 py-4 rounded-3xl border border-emerald-500/20 hover:border-emerald-500/40 max-w-md sm:max-w-xl md:max-w-2xl shadow-xl transition-all duration-300">
-          <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent text-sm sm:text-base md:text-lg font-extrabold leading-relaxed animate-pulse drop-shadow-[0_1px_8px_rgba(16,185,129,0.45)] tracking-wide text-center sm:text-left">
-            {language === "en"
-              ? "If you enjoyed this moment of relaxation 👇"
-              : language === "pt"
-              ? "Se você gostou deste momento de relaxamento 👇"
-              : "Si disfrutaste de este momento de relax 👇"}
-          </span>
-          <div className="relative shrink-0 mt-2 sm:mt-0" ref={coffeeRef}>
-            <button
-              onClick={() => setShowCoffeeOptions(!showCoffeeOptions)}
-              className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-extrabold text-amber-400 hover:text-amber-300 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 hover:border-amber-500/70 rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:scale-105 active:scale-95 transition-all duration-300 select-none cursor-pointer"
-              title={language === "en" ? "Buy me a steaming coffee ☕" : language === "pt" ? "Me pagar um cafezinho fumegante ☕" : "Invítame un cafecito humeante ☕"}
-            >
-              <span className="flex items-center gap-2 animate-pulse text-amber-400 font-extrabold">
-                <div className="relative inline-flex items-center justify-center w-5 h-5">
-                  <Coffee className="w-5 h-5 text-amber-400 shrink-0 relative z-10" />
-                  {/* Rising steam animations for a truly "humeante" feel */}
-                  <motion.span
-                    className="absolute w-[1.5px] h-2.5 bg-amber-300/70 rounded-full blur-[0.3px]"
-                    style={{ left: '30%', top: '-2px' }}
-                    animate={{
-                      y: [0, -7],
-                      opacity: [0, 0.9, 0],
-                      scaleX: [1, 1.6, 0.8],
-                    }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0,
-                    }}
-                  />
-                  <motion.span
-                    className="absolute w-[1.5px] h-3 bg-orange-300/60 rounded-full blur-[0.3px]"
-                    style={{ left: '50%', top: '-3px' }}
-                    animate={{
-                      y: [0, -10],
-                      opacity: [0, 0.8, 0],
-                      scaleX: [1, 2.0, 0.8],
-                    }}
-                    transition={{
-                      duration: 1.8,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0.3,
-                    }}
-                  />
-                  <motion.span
-                    className="absolute w-[1.5px] h-2.5 bg-amber-400/70 rounded-full blur-[0.3px]"
-                    style={{ left: '70%', top: '-2px' }}
-                    animate={{
-                      y: [0, -6],
-                      opacity: [0, 0.9, 0],
-                      scaleX: [1, 1.5, 0.8],
-                    }}
-                    transition={{
-                      duration: 1.3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      delay: 0.6,
-                    }}
-                  />
-                </div>
-                <span>{language === "en" ? "Buy me a steaming coffee ☕" : language === "pt" ? "Me pagar um cafezinho fumegante ☕" : "Invítame un cafecito humeante ☕"}</span>
-              </span>
-              <ChevronDown className={`w-4 h-4 text-amber-400 transition-transform duration-300 ${showCoffeeOptions ? 'rotate-180' : ''}`} />
-            </button>
-
-            <div
-              className={`absolute bottom-full right-1/2 translate-x-1/2 sm:right-0 sm:translate-x-0 mb-3 bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 flex flex-col gap-2 shadow-2xl z-50 min-w-[210px] border-amber-500/30 transition-all duration-300 origin-bottom ${
-                showCoffeeOptions
-                  ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
-                  : "opacity-0 translate-y-2 scale-95 pointer-events-none"
-              }`}
-            >
-              <div className="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wider border-b border-slate-900 pb-2 mb-1">
-                {language === "en" ? "Support the project" : language === "pt" ? "Apoiar o projeto" : "Apoyar al proyecto"}
-              </div>
-              
-              {/* Mercado Pago */}
-              <a
-                href="https://mpago.la/1LHyBwV"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowCoffeeOptions(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/10 hover:border-amber-500/40 rounded-xl transition-all duration-300 cursor-pointer select-none"
-                title={language === "en" ? "Mercado Pago (Argentina)" : "Mercado Pago (Argentina)"}
-              >
-                <span className="text-sm">🇦🇷</span>
-                <span>Mercado Pago</span>
-              </a>
-
-              {/* PayPal */}
-              <a
-                href="https://paypal.me/margsaft?locale.x=es_XC&country.x=AR"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowCoffeeOptions(false)}
-                className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-sky-300 hover:text-white hover:bg-sky-500/10 border border-sky-500/10 hover:border-sky-500/40 rounded-xl transition-all duration-300 cursor-pointer select-none"
-                title={language === "en" ? "PayPal (International)" : "PayPal (Internacional)"}
-              >
-                <span className="text-sm">🌎</span>
-                <span>PayPal</span>
-              </a>
+        {/* Cafecito / Gratitude Section - Clean standalone button with a single steaming coffee cup below the text and centered, with no surrounding box */}
+        <div className="relative mt-3 z-30 flex flex-col items-center" ref={coffeeRef}>
+          <button
+            onClick={() => setShowCoffeeOptions(!showCoffeeOptions)}
+            className="flex flex-col items-center justify-center gap-1.5 text-xs sm:text-sm font-black text-amber-400 hover:text-amber-300 transition-all duration-300 select-none cursor-pointer bg-transparent border-0 group"
+            title={language === "en" ? "Buy me a steaming coffee" : language === "pt" ? "Me pagar um cafezinho fumegante" : "Invítame a un cafecito humeante"}
+          >
+            <span className="flex items-center gap-1 group-hover:underline">
+              <TwinkleText
+                text={language === "en" ? "Buy me a steaming coffee" : language === "pt" ? "Me pague um cafezinho fumegante" : "Invítame a un cafecito humeante"}
+                glowColor="rgba(245, 158, 11, 0.55)"
+                className="font-black"
+              />
+              <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-300 ${showCoffeeOptions ? 'rotate-180' : ''}`} />
+            </span>
+            
+            {/* Centered steaming coffee cup below the text */}
+            <div className="relative inline-flex items-center justify-center w-6 h-6 mt-1 group-hover:scale-110 transition-transform duration-300">
+              <Coffee className="w-5.5 h-5.5 text-amber-400 shrink-0 relative z-10" />
+              {/* Rising steam animations for a truly "humeante" feel */}
+              <motion.span
+                className="absolute w-[1.5px] h-2.5 bg-amber-300/70 rounded-full blur-[0.3px]"
+                style={{ left: '30%', top: '-2px' }}
+                animate={{
+                  y: [0, -7],
+                  opacity: [0, 0.9, 0],
+                  scaleX: [1, 1.6, 0.8],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0,
+                }}
+              />
+              <motion.span
+                className="absolute w-[1.5px] h-3 bg-orange-300/60 rounded-full blur-[0.3px]"
+                style={{ left: '50%', top: '-3px' }}
+                animate={{
+                  y: [0, -10],
+                  opacity: [0, 0.8, 0],
+                  scaleX: [1, 2.0, 0.8],
+                }}
+                transition={{
+                  duration: 1.8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.3,
+                }}
+              />
+              <motion.span
+                className="absolute w-[1.5px] h-2.5 bg-amber-400/70 rounded-full blur-[0.3px]"
+                style={{ left: '70%', top: '-2px' }}
+                animate={{
+                  y: [0, -6],
+                  opacity: [0, 0.9, 0],
+                  scaleX: [1, 1.5, 0.8],
+                }}
+                transition={{
+                  duration: 1.3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: 0.6,
+                }}
+              />
             </div>
+          </button>
+
+          <div
+            className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-2xl p-3 flex flex-col gap-2 shadow-2xl z-50 min-w-[210px] border-amber-500/30 transition-all duration-300 origin-bottom ${
+              showCoffeeOptions
+                ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+                : "opacity-0 translate-y-2 scale-95 pointer-events-none"
+            }`}
+          >
+            <div className="text-[10px] text-slate-400 font-bold text-center uppercase tracking-wider border-b border-slate-900 pb-2 mb-1">
+              {language === "en" ? "Support the project" : language === "pt" ? "Apoiar o projeto" : "Apoyar al proyecto"}
+            </div>
+            
+            {/* Mercado Pago */}
+            <a
+              href="https://mpago.la/1LHyBwV"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setShowCoffeeOptions(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-amber-300 hover:text-white hover:bg-amber-500/10 border border-amber-500/10 hover:border-amber-500/40 rounded-xl transition-all duration-300 cursor-pointer select-none"
+              title={language === "en" ? "Mercado Pago (Argentina)" : "Mercado Pago (Argentina)"}
+            >
+              <span className="text-sm">🇦🇷</span>
+              <span>Mercado Pago</span>
+            </a>
+
+            {/* PayPal */}
+            <a
+              href="https://paypal.me/margsaft?locale.x=es_XC&country.x=AR"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setShowCoffeeOptions(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-sky-300 hover:text-white hover:bg-sky-500/10 border border-sky-500/10 hover:border-sky-500/40 rounded-xl transition-all duration-300 cursor-pointer select-none"
+              title={language === "en" ? "PayPal (International)" : "PayPal (Internacional)"}
+            >
+              <span className="text-sm">🌎</span>
+              <span>PayPal</span>
+            </a>
           </div>
         </div>
 

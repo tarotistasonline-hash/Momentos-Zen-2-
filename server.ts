@@ -2387,6 +2387,324 @@ Devuelve el resultado estructurado en JSON con el siguiente formato exacto:
   }
 });
 
+/* Procedural Fallback Helpers for New Spiritual Features */
+function getProceduralAkashicRecord(name: string, birthdate: string, question: string, lang: string) {
+  const isEn = lang === "en";
+  const isPt = lang === "pt";
+  const isDe = lang === "de";
+
+  if (isEn) {
+    return {
+      vibration: "528Hz - Soul Transformation Frequency",
+      akashicKey: "Gateway of Divine Remembrance",
+      soulOrigin: "Andromedan Empath Soul Group",
+      pastLifeLesson: "Learning to balance individual autonomy with loving relationships, transcending past dependency.",
+      presentBlockage: "An unconscious fear of showing your true spiritual potential due to ancient tribal exile.",
+      futurePotential: "Expanding your voice and creating high-frequency sanctuaries that ground cosmic light.",
+      advice: "Release all expectations, breathe deeply into your heart center, and speak your truth with boundless compassion.",
+      mantra: "I AM the light that illuminates all darkness within and without."
+    };
+  } else if (isPt) {
+    return {
+      vibration: "528Hz - Frequência de Transformação do Ser",
+      akashicKey: "Portal da Lembrança Divina",
+      soulOrigin: "Grupo de Almas Empatas de Andrômeda",
+      pastLifeLesson: "Aprender a equilibrar a autonomia individual com relações amorosas, transcendendo a dependência.",
+      presentBlockage: "Um medo inconsciente de expressar sua verdadeira essência espiritual por medo de julgamento.",
+      futurePotential: "Expandir sua voz e co-criar santuários de cura que aterram luz cósmica.",
+      advice: "Solte todas as expectativas, respire profundamente no centro do seu coração e expresse sua verdade com compaixão divina.",
+      mantra: "EU SOU a luz que ilumina toda a escuridão interior e exterior."
+    };
+  } else if (isDe) {
+    return {
+      vibration: "528Hz - Frequenz der Seelentransformation",
+      akashicKey: "Tor der göttlichen Erinnerung",
+      soulOrigin: "Andromedanische Empath-Seelengruppe",
+      pastLifeLesson: "Lernen, die persönliche Autonomie mit liebevollen Beziehungen in Einklang zu bringen.",
+      presentBlockage: "Eine unbewusste Angst vor Ablehnung hindert dich daran, dein volles spirituelles Potenzial zu entfalten.",
+      futurePotential: "Erweiterung deiner Stimme und Erschaffung von hochschwingenden Räumen der Ruhe.",
+      advice: "Lass alle Erwartungen los, atme tief in dein Herzzentrum und sprich deine Wahrheit mit Mitgefühl aus.",
+      mantra: "ICH BIN das Licht, das alle Dunkelheit erhellt."
+    };
+  } else {
+    return {
+      vibration: "528Hz - Frecuencia de la Transformación del Ser",
+      akashicKey: "Portal del Recuerdo Divino",
+      soulOrigin: "Grupo de Almas Empáticas de Andrómeda",
+      pastLifeLesson: "Aprender a equilibrar la autonomía individual con las relaciones amorosas, trascendiendo la dependencia ancestral.",
+      presentBlockage: "Un miedo inconsciente a expresar tu verdadero potencial espiritual debido al temor ancestral al rechazo.",
+      futurePotential: "Expandir tu voz y co-crear espacios de alta frecuencia que anclen la luz cósmica en la Tierra.",
+      advice: "Suelta todas las expectativas terrenales, respira profundamente en tu centro cardíaco y expresa tu verdad con compasión divina.",
+      mantra: "YO SOY la luz crística que ilumina toda oscuridad dentro y fuera de mí."
+    };
+  }
+}
+
+function getProceduralDreamInterpretation(description: string, mood: string, lang: string) {
+  const isEn = lang === "en";
+  const isPt = lang === "pt";
+  const isDe = lang === "de";
+
+  if (isEn) {
+    return {
+      symbols: [
+        { name: "Deep Water", meaning: "Represents the vastness of your unconscious mind and deep hidden emotional currents." },
+        { name: "Mystic Light", meaning: "A symbol of awakening consciousness and spiritual guidance from your Higher Self." }
+      ],
+      psychologicalMeaning: "Your psyche is integrating raw unresolved emotions, urging you to pay attention to your emotional needs.",
+      mysticalMeaning: "You are crossing an energetic threshold; your spirit is preparing for a significant vibrational shift.",
+      message: "The subconscious is urging you to flow with the changes instead of resisting them.",
+      advice: "Take a few minutes after waking up to sit in silence and write down any feelings that surface."
+    };
+  } else if (isPt) {
+    return {
+      symbols: [
+        { name: "Água Profunda", meaning: "Representa a imensidão da sua mente inconsciente e correntes emocionais ocultas." },
+        { name: "Luz Mística", meaning: "Um símbolo de despertar da consciência e orientação espiritual do seu Eu Superior." }
+      ],
+      psychologicalMeaning: "Sua psique está integrando emoções não resolvidas, instando você a prestar atenção às suas necessidades emocionais.",
+      mysticalMeaning: "Você está cruzando um limiar energético; seu espírito está se preparando para uma mudança vibracional significativa.",
+      message: "O subconsciente está instando você a fluir com as mudanças em vez de resistir a elas.",
+      advice: "Reserve alguns minutos após acordar para sentar em silêncio e anotar quaisquer sentimentos que surjam."
+    };
+  } else if (isDe) {
+    return {
+      symbols: [
+        { name: "Tiefes Wasser", meaning: "Repräsentiert die unendliche Tiefe deines Unterbewusstseins und verborgene Gefühle." },
+        { name: "Mystisches Licht", meaning: "Symbol für erwachendes Bewusstsein und Führung durch dein Höheres Selbst." }
+      ],
+      psychologicalMeaning: "Deine Psyche verarbeitet ungelöste Emotionen und fordert dich auf, achtsamer mit dir selbst zu sein.",
+      mysticalMeaning: "Du überschreitest eine energetische Schwelle; ein spiritueller Transformationsprozess steht bevor.",
+      message: "Dein Unterbewusstsein rät dir, mit dem Fluss des Lebens zu schwimmen.",
+      advice: "Nimm dir nach dem Aufwachen ein paar Minuten Zeit, um in der Stille deine Träume aufzuschreiben."
+    };
+  } else {
+    return {
+      symbols: [
+        { name: "Agua Profunda", meaning: "Representa la inmensidad de tu mente inconsciente y las corrientes emocionales ocultas." },
+        { name: "Luz Mística", meaning: "Un símbolo de despertar de la conciencia y guía espiritual directa de tu Yo Superior." }
+      ],
+      psychologicalMeaning: "Tu psique está integrando emociones puras que no han sido expresadas, instándote a prestar atención a tus necesidades emocionales.",
+      mysticalMeaning: "Estás cruzando un umbral energético en el plano astral; tu espíritu se prepara para una transición vibracional significativa.",
+      message: "El subconsciente te pide que dejes fluir los cambios en lugar de aferrarte al control.",
+      advice: "Dedica unos minutos al despertar para meditar en silencio e integrar las imágenes simbólicas de este sueño."
+    };
+  }
+}
+
+function getProceduralAstralTravel(intent: string, lang: string) {
+  const isEn = lang === "en";
+  const isPt = lang === "pt";
+  const isDe = lang === "de";
+
+  if (isEn) {
+    return {
+      frequency: "963Hz - Divine Gateway Resonance",
+      vibrationalAnchor: "A brilliant indigo crystal radiating from your third eye.",
+      astralSafetyMantra: "I am light, I am safe, I return to my body with full memory and peace.",
+      guidedJourney: "Feel your physical body become heavy and warm. As you exhale, imagine your consciousness rising like a gentle mist above your forehead. You float effortlessly, looking down at your peaceful body. A beam of white-violet light invites you to travel to a Temple of Wisdom...",
+      planarDestination: "Higher Astral Plane - Archives of Light",
+      guardiansMessage: "Do not fear the transition; your thread of light is eternal. Travel with love and pure curiosity."
+    };
+  } else if (isPt) {
+    return {
+      frequency: "963Hz - Ressonância do Portal Divino",
+      vibrationalAnchor: "Um cristal índigo brilhante radiando a partir do seu terceiro olho.",
+      astralSafetyMantra: "Eu sou luz, estou seguro, volto ao meu corpo com plena memória e paz.",
+      guidedJourney: "Sinta seu corpo físico se tornar pesado e quente. Ao expirar, imagine sua consciência subindo como uma névoa suave acima da testa. Você flutua sem esforço, olhando para o seu corpo pacífico. Um feixe de luz branco-violeta convida você a viajar...",
+      planarDestination: "Plano Astral Superior - Arquivos de Luz",
+      guardiansMessage: "Não tenha medo da transição; seu fio de prata é eterno. Viaje com amor e pura curiosidade espiritual."
+    };
+  } else if (isDe) {
+    return {
+      frequency: "963Hz - Göttliche Portal-Resonanz",
+      vibrationalAnchor: "Ein strahlender indigoblauer Kristall auf deinem Dritten Auge.",
+      astralSafetyMantra: "Ich bin Licht, ich bin sicher, ich kehre mit voller Erinnerung zurück.",
+      guidedJourney: "Spüre, wie dein physischer Körper schwer wird. Atme aus und stelle dir vor, wie dein Bewusstsein wie ein sanfter Nebel über deine Stirn aufsteigt. Du schwebst mühelos und blickst auf deinen Körper hinab. Ein Lichtstrahl lädt dich auf eine weise Reise ein...",
+      planarDestination: "Höhere Astralebene - Tempel der Weisheit",
+      guardiansMessage: "Fürchte dich nicht vor dem Übergang; deine silberne Schnur ist ewig. Reise mit reinem Herzen."
+    };
+  } else {
+    return {
+      frequency: "963Hz - Resonancia del Portal Divino",
+      vibrationalAnchor: "Un brillante cristal índigo que irradia desde tu entrecejo (tercer ojo).",
+      astralSafetyMantra: "Yo soy luz, estoy a salvo, regreso a mi cuerpo físico con memoria plena y en paz.",
+      guidedJourney: "Siente tu cuerpo físico volverse pesado, cálido y relajado. Al exhalar, imagina tu conciencia elevándose como una suave bruma plateada por encima de tu frente. Flotas sin esfuerzo en la habitación, observando tu envoltura física en paz. Un rayo de luz blanco-violeta se abre, invitándote a ascender hacia tu destino sagrado...",
+      planarDestination: "Plano Astral Superior - Santuarios de Luz y Sabiduría",
+      guardiansMessage: "No temas a la separación sutil; tu cordón de plata es inquebrantable y eterno. Viaja con el corazón lleno de amor y curiosidad pura."
+    };
+  }
+}
+
+/* API Route: Registros Akashicos */
+app.post("/api/akashic-records", async (req, res) => {
+  const { name, birthdate, question, language } = req.body;
+  const userName = name || "Buscador de la Luz";
+  const userBirth = birthdate || "Desconocida";
+  const userQuestion = question || "Guía general para mi evolución de alma.";
+  const lang = language || "es";
+
+  try {
+    const prompt = `Actúa como un lector de Registros Akáshicos profundamente canalizado, intuitivo y místico.
+Estás abriendo el Libro de la Vida y los Registros Akáshicos del Alma de la persona con nombre '${userName}' nacida el '${userBirth}'.
+Su consulta o intención para esta apertura es: '${userQuestion}'.
+Sintonízate con los guías espirituales, maestros ascendidos y seres de luz para canalizar la sabiduría de su registro akáshico.
+Proporciona una lectura de alma mística, compasiva, esclarecedora y reconfortante. Evita predicciones de tipo fatalista o asustadizas.
+${getLanguageInstruction(lang)}
+Devuelve el resultado estructurado en JSON con el siguiente formato exacto:
+{
+  "vibration": "Una frecuencia vibratoria cósmica recomendada (ej: '780Hz - Frecuencia del Despertar')",
+  "akashicKey": "El nombre de una clave o sello sagrado espiritual canalizado para esta consulta",
+  "soulOrigin": "El grupo de origen del alma o constelación de procedencia (ej: 'Semilla Estelar de las Pléyades', 'Alma Antigua Terrestre', 'Lira')",
+  "pastLifeLesson": "Una memoria o lección pendiente que se arrastra de una encarnación pasada relacionada con su pregunta",
+  "presentBlockage": "Un patrón energético o bloqueo en esta vida que necesita disolver para avanzar",
+  "futurePotential": "La vibración de mayor potencial o línea temporal positiva de evolución espiritual basada en sus decisiones",
+  "advice": "El consejo sagrado canalizado por los Guías Akáshicos.",
+  "mantra": "Un mantra canalizado de alta vibración para anclar esta lectura."
+}`;
+
+    const response = await generateContentWithRetry({
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            vibration: { type: Type.STRING },
+            akashicKey: { type: Type.STRING },
+            soulOrigin: { type: Type.STRING },
+            pastLifeLesson: { type: Type.STRING },
+            presentBlockage: { type: Type.STRING },
+            futurePotential: { type: Type.STRING },
+            advice: { type: Type.STRING },
+            mantra: { type: Type.STRING }
+          },
+          required: ["vibration", "akashicKey", "soulOrigin", "pastLifeLesson", "presentBlockage", "futurePotential", "advice", "mantra"]
+        }
+      }
+    });
+
+    const result = JSON.parse(response.text || "{}");
+    res.json(result);
+  } catch (err: any) {
+    console.warn("Falling back to procedural Akashic records due to error:", err.message || err);
+    const fallback = getProceduralAkashicRecord(userName, userBirth, userQuestion, lang);
+    res.json(fallback);
+  }
+});
+
+/* API Route: Interpretacion de Suenos */
+app.post("/api/dream-interpretation", async (req, res) => {
+  const { dreamDescription, dreamMood, language } = req.body;
+  const description = dreamDescription || "Un sueño borroso que no recuerdo bien.";
+  const mood = dreamMood || "pensive";
+  const lang = language || "es";
+
+  try {
+    const prompt = `Actúa como un intérprete de sueños junguiano de renombre mundial, místico y analista del subconsciente profundo.
+El usuario ha tenido un sueño con tonalidad emocional '${mood}' y lo ha descrito así: '${description}'.
+Analiza detalladamente los símbolos místico-espirituales, los arquetipos, el significado psicológico y el mensaje profundo del alma en este sueño.
+${getLanguageInstruction(lang)}
+Devuelve el resultado estructurado en JSON con el siguiente formato exacto:
+{
+  "symbols": [
+    {
+      "name": "Nombre del símbolo (ej: Agua Turbia)",
+      "meaning": "Significado simbólico y arquetípico místico"
+    }
+  ],
+  "psychologicalMeaning": "Análisis junguiano y emocional de lo que representa en su psique actual.",
+  "mysticalMeaning": "La revelación espiritual o advertencia del plano astral.",
+  "message": "Un mensaje breve y contundente sintetizado de su subconsciente.",
+  "advice": "Un consejo práctico y espiritual para integrar el aprendizaje de este sueño en su vida despierta."
+}`;
+
+    const response = await generateContentWithRetry({
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            symbols: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  meaning: { type: Type.STRING }
+                },
+                required: ["name", "meaning"]
+              }
+            },
+            psychologicalMeaning: { type: Type.STRING },
+            mysticalMeaning: { type: Type.STRING },
+            message: { type: Type.STRING },
+            advice: { type: Type.STRING }
+          },
+          required: ["symbols", "psychologicalMeaning", "mysticalMeaning", "message", "advice"]
+        }
+      }
+    });
+
+    const result = JSON.parse(response.text || "{}");
+    res.json(result);
+  } catch (err: any) {
+    console.warn("Falling back to procedural dream interpretation due to error:", err.message || err);
+    const fallback = getProceduralDreamInterpretation(description, mood, lang);
+    res.json(fallback);
+  }
+});
+
+/* API Route: Viajes Astrales */
+app.post("/api/astral-travel", async (req, res) => {
+  const { intent, language } = req.body;
+  const userIntent = intent || "Viaje de exploración general en paz.";
+  const lang = language || "es";
+
+  try {
+    const prompt = `Actúa como un maestro de proyección astral, místico de la conciencia extracorpórea y guía del plano sutil.
+El usuario desea sintonizar su energía para realizar una proyección o viaje astral con la siguiente intención o destino: '${userIntent}'.
+Proporciona una sintonización vibratoria detallada, un anclaje energético y un mensaje del plano astral para guiar su desdoblamiento seguro y lúcido.
+${getLanguageInstruction(lang)}
+Devuelve el resultado estructurado en JSON con el siguiente formato exacto:
+{
+  "frequency": "Frecuencia de sintonización astral sugerida (ej: '963Hz - Conexión Cósmica')",
+  "vibrationalAnchor": "Un objeto, símbolo o visualización para usar como anclaje antes de salir del cuerpo",
+  "astralSafetyMantra": "Un mantra de protección y lucidez astral para repetir mentalmente durante la transición",
+  "guidedJourney": "Una narración corta y hermosa guiando los primeros momentos del desdoblamiento astral enfocado en su intención.",
+  "planarDestination": "El plano o reino de destino sutil sugerido para su consulta (ej: 'Plano Astral Superior - Templo de Sabiduría')",
+  "guardiansMessage": "Un mensaje o consejo de los Guardianes del Umbral Astral."
+}`;
+
+    const response = await generateContentWithRetry({
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            frequency: { type: Type.STRING },
+            vibrationalAnchor: { type: Type.STRING },
+            astralSafetyMantra: { type: Type.STRING },
+            guidedJourney: { type: Type.STRING },
+            planarDestination: { type: Type.STRING },
+            guardiansMessage: { type: Type.STRING }
+          },
+          required: ["frequency", "vibrationalAnchor", "astralSafetyMantra", "guidedJourney", "planarDestination", "guardiansMessage"]
+        }
+      }
+    });
+
+    const result = JSON.parse(response.text || "{}");
+    res.json(result);
+  } catch (err: any) {
+    console.warn("Falling back to procedural astral travel guide due to error:", err.message || err);
+    const fallback = getProceduralAstralTravel(userIntent, lang);
+    res.json(fallback);
+  }
+});
+
 const activeSessions = new Map<string, number>();
 
 function cleanActiveSessions() {

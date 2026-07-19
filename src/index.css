@@ -23,9 +23,17 @@
   --color-borde: rgba(255, 255, 255, 0.12);
 }
 
+@keyframes iridescentBg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-azul);
+  background: linear-gradient(135deg, #070010 0%, #170029 35%, #0d001a 70%, #20003b 100%);
+  background-size: 300% 300%;
+  animation: iridescentBg 20s ease infinite;
   color: #ffffff;
   scroll-behavior: smooth;
   overflow-x: hidden;
@@ -188,6 +196,18 @@ body {
 p, li, .leading-relaxed, .markdown-body p {
   text-align: justify;
   text-justify: inter-word;
+}
+
+/* Accessibility Font Scaling Classes */
+html, :root {
+  font-size: 16px;
+  transition: font-size 0.2s ease-in-out;
+}
+html.font-size-large {
+  font-size: 18.5px;
+}
+html.font-size-xlarge {
+  font-size: 21px;
 }
 
 @keyframes zenBgGlow {
